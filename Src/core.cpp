@@ -12,6 +12,8 @@
 #include "bitget.h"
 #include "bingx.h"
 #include "okx.h"
+#include "kucoinfutures.h"
+#include "bitgetfutures.h"
 
 #include "core.h"
 
@@ -299,6 +301,7 @@ void Core::sendLogMsgAppServer(Common::TDBLoger::MSG_CODE category, const QStrin
 
 std::unique_ptr<IStockExchange> Core::makeStockEchange(const TradingCatCommon::StockExchangeConfig& stockExchangeConfig) const
 {
+    // Spot
     if (stockExchangeConfig.type == Moex::STOCK_ID)
     {
         return std::make_unique<Moex>(stockExchangeConfig, _proxyList);
@@ -334,6 +337,16 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const TradingCatCommon::S
     else if (stockExchangeConfig.type == Okx::STOCK_ID)
     {
         return std::make_unique<Okx>(stockExchangeConfig, _proxyList);
+    }
+
+    // Futures
+    else if (stockExchangeConfig.type == KucoinFutures::STOCK_ID)
+    {
+        return std::make_unique<KucoinFutures>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == BitgetFutures::STOCK_ID)
+    {
+        return std::make_unique<BitgetFutures>(stockExchangeConfig, _proxyList);
     }
 
     return nullptr;

@@ -11,22 +11,22 @@
 #include <Common/parser.h>
 #include <TradingCatCommon/detector.h>
 
-#include "kucoinkline.h"
+#include "kucoinklinefutures.h"
 
-#include "kucoin.h"
+#include "kucoinfutures.h"
 
 using namespace Common;
 using namespace TradingCatCommon;
 
 //static
-Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.kucoin.com/"));
+Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api-futures.kucoin.com/"));
 
-const StockExchangeID Kucoin::STOCK_ID("KUCOIN");
+const StockExchangeID KucoinFutures::STOCK_ID("KUCOIN_FUTURES");
 
 ///////////////////////////////////////////////////////////////////////////////
-/// class Kucoin
+/// class KucoinFutures
 ///
-Kucoin::Kucoin(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent)
+KucoinFutures::KucoinFutures(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent)
     : IStockExchange{STOCK_ID, parent}
     , _config(config)
     , _proxyList(proxyList)
@@ -34,12 +34,12 @@ Kucoin::Kucoin(const TradingCatCommon::StockExchangeConfig& config, const Common
     _headers.insert(QByteArray{"Content-Type"}, QByteArray{"application/json"});
 }
 
-Kucoin::~Kucoin()
+KucoinFutures::~KucoinFutures()
 {
     stop();
 }
 
-void Kucoin::start()
+void KucoinFutures::start()
 {
     Q_ASSERT(!_isStarted);
 
@@ -76,7 +76,7 @@ void Kucoin::start()
     sendUpdateMoney();
 }
 
-void Kucoin::stop()
+void KucoinFutures::stop()
 {
     if (!_isStarted)
     {
@@ -93,7 +93,7 @@ void Kucoin::stop()
     emit finished();
 }
 
-void Kucoin::getAnswerHTTP(const QByteArray &answer, quint64 id)
+void KucoinFutures::getAnswerHTTP(const QByteArray &answer, quint64 id)
 {
     if (id != _currentRequestId)
     {
@@ -105,7 +105,7 @@ void Kucoin::getAnswerHTTP(const QByteArray &answer, quint64 id)
     parseMoney(answer);
 }
 
-void Kucoin::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void KucoinFutures::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
 {
     Q_UNUSED(code);
     Q_UNUSED(serverCode);
@@ -122,12 +122,12 @@ void Kucoin::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverC
     restartUpdateMoney();
 }
 
-void Kucoin::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
+void KucoinFutures::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
 {
     emit sendLogMsg(STOCK_ID, category, QString("HTTP request %1: %2").arg(id).arg(msg));
 }
 
-void Kucoin::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
+void KucoinFutures::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
 {
     Q_ASSERT(!klines->empty());
 
@@ -151,18 +151,18 @@ void Kucoin::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
     emit getKLines(STOCK_ID, klines);
 }
 
-void Kucoin::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
+void KucoinFutures::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     emit errorOccurred(STOCK_ID, errorCode, QString("KLines Pool error: %1").arg(errorString));
 }
 
-void Kucoin::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void KucoinFutures::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
 {
     emit sendLogMsg(STOCK_ID, category, QString("KLines Pool: %1").arg(msg));
 }
 
 
-void Kucoin::sendUpdateMoney()
+void KucoinFutures::sendUpdateMoney()
 {
     Q_CHECK_PTR(_http);
 
@@ -170,19 +170,19 @@ void Kucoin::sendUpdateMoney()
     Q_ASSERT(_isStarted);
 
     QUrl url(*BASE_URL);
-    url.setPath("/api/v2/symbols");
+    url.setPath("/api/v1/contracts/active");
 
     _currentRequestId = _http->send(url, Common::HTTPSSLQuery::RequestType::GET);
 }
 
-void Kucoin::restartUpdateMoney()
+void KucoinFutures::restartUpdateMoney()
 {
     QTimer::singleShot(60 * 1000, this, [this](){ if (_isStarted) this->sendUpdateMoney(); });
 
     emit sendLogMsg(STOCK_ID, TDBLoger::MSG_CODE::WARNING_CODE, QString("The search for the list of KLines failed with an error. Retry after 60 s"));
 }
 
-void Kucoin::parseMoney(const QByteArray &answer)
+void KucoinFutures::parseMoney(const QByteArray &answer)
 {
     try
     {
@@ -199,7 +199,7 @@ void Kucoin::parseMoney(const QByteArray &answer)
             {
                 const auto& moneyNameStr = moneyName.value();
 
-                if (moneyNameStr.last(4) != "USDT")
+                if (moneyNameStr.last(5) != "USDTM")
                 {
                     continue;
                 }
@@ -251,7 +251,7 @@ void Kucoin::parseMoney(const QByteArray &answer)
     makeKLines();
 }
 
-void Kucoin::makeKLines()
+void KucoinFutures::makeKLines()
 {
     quint32 addKLineCount = 0;
     quint32 eraseKLineCount = 0;
@@ -279,7 +279,7 @@ void Kucoin::makeKLines()
     {
         if (!_pool->isExitsKLine(klineId))
         {
-            auto kline = std::make_unique<KucoinKLine>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));;
+            auto kline = std::make_unique<KucoinKLineFutures>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));;
 
             _pool->addKLine(std::move(kline));
 

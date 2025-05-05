@@ -42,7 +42,7 @@ QString KucoinKLine::KLineTypeToString(TradingCatCommon::KLineType type)
 
 KucoinKLine::KucoinKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
     : IKLine(id, parent)
-    , _lastClose(lastClose)
+    , _lastClose(lastClose.toMSecsSinceEpoch())
 {
     Q_ASSERT(!id.isEmpty());
     Q_ASSERT(id.type == KLineType::MIN1 || id.type == KLineType::MIN5);
@@ -55,7 +55,7 @@ void KucoinKLine::sendGetKline()
 
     //Запрашиваем немного больше свечей чтобы компенсировать разницу часов между сервером и биржей
     //лишнии свечи отбросим при парсинге
-    quint32 count = (_lastClose.msecsTo(QDateTime::currentDateTime()) / static_cast<quint64>(IKLine::id().type)) + 10;
+    quint32 count = ((QDateTime::currentDateTime().toMSecsSinceEpoch() - _lastClose) / static_cast<quint64>(IKLine::id().type)) + 10;
     if (count > 500)
     {
         count = 500;
@@ -64,7 +64,7 @@ void KucoinKLine::sendGetKline()
     QUrlQuery urlQuery;
     urlQuery.addQueryItem("symbol", IKLine::id().symbol);
     urlQuery.addQueryItem("type", KLineTypeToString(IKLine::id().type));
-    urlQuery.addQueryItem("startAt", QString::number(_lastClose.toSecsSinceEpoch()));
+    urlQuery.addQueryItem("startAt", QString::number(_lastClose / 1000));
     urlQuery.addQueryItem("endAt", QString::number(QDateTime::currentDateTime().toSecsSinceEpoch()));
 
     QUrl url(*BASE_URL);
@@ -84,12 +84,26 @@ PKLinesList KucoinKLine::parseKLine(const QByteArray &answer)
         const auto rootJson = JSONParseToMap(answer);
         const auto dataJson = JSONReadMapToArray(rootJson, "data", "Root/data");
 
-        for (const auto& kline: dataJson)
+        if (dataJson.size() < 2)
         {
-            const auto data = kline.toArray();
+            return result;
+        }
 
-            const auto openDateTime = QDateTime::fromSecsSinceEpoch(data[0].toString().toLongLong());
-            const auto closeDateTime = openDateTime.addMSecs(static_cast<quint64>(IKLine::id().type));
+        //Последняя свеча может быть некорректно сформирована, поэтму в следующий раз нам надо получить ее еще раз
+        const auto it_klinePreEnd = std::prev(dataJson.end());
+        for (auto it_kline = it_klinePreEnd; it_kline != dataJson.begin(); --it_kline)
+        {
+            // Start time of the candle cycle, opening price, closing price, highest price, Lowest price, Transaction amount, Transaction volume
+            const auto data = JSONReadArray(*it_kline, "Root/data/[]");
+
+            const auto openDateTime = data[0].toString().toLongLong() * 1000;
+            const auto closeDateTime = openDateTime + static_cast<qint64>(IKLine::id().type);
+
+            //отсеиваем лишнии свечи
+            if (_lastClose >= closeDateTime)
+            {
+                continue;
+            }
 
             auto tmp = std::make_shared<KLine>();
             tmp->openTime = openDateTime;
@@ -102,25 +116,10 @@ PKLinesList KucoinKLine::parseKLine(const QByteArray &answer)
             tmp->closeTime = closeDateTime;
             tmp->id = IKLine::id();
 
-            //отсеиваем лишнии свечи
-            if (_lastClose >= tmp->closeTime)
-            {
-                continue;
-            }
-
             result->emplace_back(std::move(tmp));
-        }
 
-        //Вычисляем самую позднюю свечу
-        if (!result->empty())
-        {
-            QDateTime maxDateTime = QDateTime::currentDateTime().addYears(-100);
-            for (const auto& kline: *result)
-            {
-                maxDateTime = std::max(maxDateTime, kline->closeTime);
-            }
-            //Последняя свеча может быть некорректно сформирована, поэтму в следующий раз нам надо получить ее еще раз
-            _lastClose = maxDateTime.addMSecs(-(static_cast<qint64>(IKLine::id().type)));
+            //Вычисляем самую позднюю свечу
+            _lastClose = std::max(_lastClose, closeDateTime);
         }
     }
     catch (const ParseException& err)

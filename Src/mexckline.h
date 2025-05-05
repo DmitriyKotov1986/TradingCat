@@ -38,7 +38,7 @@ private:
     quint64 _currentRequestId = 0;
     bool _isStarted = false;
 
-    QDateTime _lastClose = QDateTime::currentDateTime().addDays(-1);
+    qint64 _lastClose = 0;
 
     const QString _secretKey;
 

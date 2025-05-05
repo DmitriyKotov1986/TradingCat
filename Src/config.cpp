@@ -16,6 +16,8 @@
 #include "bitget.h"
 #include "bingx.h"
 #include "okx.h"
+#include "kucoinfutures.h"
+#include "bitgetfutures.h"
 
 #include "config.h"
 
@@ -24,14 +26,17 @@ using namespace Common;
 
 Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
                           ({Moex::STOCK_ID.name,
-                            Mexc::STOCK_ID.name,
-                            Gate::STOCK_ID.name,
-                            Kucoin::STOCK_ID.name,
-                            Bybit::STOCK_ID.name,
-                            Bitget::STOCK_ID.name,
-                            Bingx::STOCK_ID.name,
-                            Okx::STOCK_ID.name,
-                            Binance::STOCK_ID.name}));
+                              Mexc::STOCK_ID.name,
+                              Gate::STOCK_ID.name,
+                              Kucoin::STOCK_ID.name,
+                              Bybit::STOCK_ID.name,
+                              Bitget::STOCK_ID.name,
+                              Bingx::STOCK_ID.name,
+                              Okx::STOCK_ID.name,
+                              Binance::STOCK_ID.name,
+                              KucoinFutures::STOCK_ID.name,
+                              BitgetFutures::STOCK_ID.name
+                          }));
 
 //static
 static Config* config_ptr = nullptr;

@@ -44,7 +44,7 @@ MoexKLine::MoexKLine(const TradingCatCommon::KLineID &id,
     , _engines(engines)
     , _markets(markets)
     , _boards(boards)
-    , _lastClose(lastClose)
+    , _lastClose(lastClose.toMSecsSinceEpoch())
 {
     Q_ASSERT(!_engines.isEmpty());
     Q_ASSERT(!_markets.isEmpty());
@@ -61,7 +61,7 @@ void MoexKLine::sendGetKline()
     QUrlQuery urlQuery;
     urlQuery.addQueryItem("iss.meta", "off");
     urlQuery.addQueryItem("interval", KLineTypeToString(IKLine::id().type));
-    urlQuery.addQueryItem("from", _lastClose.addSecs(-1).toString(*MOEX_DATETIME_FORMAT));
+    urlQuery.addQueryItem("from", QDateTime::fromMSecsSinceEpoch(_lastClose).addSecs(-1).toString(*MOEX_DATETIME_FORMAT));
 
     QUrl url(*BASE_URL);
     url.setPath(QString("/iss/engines/%1/markets/%2/boards/%3/securities/%4/candles.json")
@@ -218,7 +218,7 @@ PKLinesList MoexKLine::parseKLine(const QByteArray &answer)
                     {
                         throw ParseException(QString("Value in column %1 on path %2 is null").arg(columnType).arg(path));
                     }
-                    tmp->openTime = value.value();
+                    tmp->openTime = value.value().toMSecsSinceEpoch();
                 }
                 else if (columnType == "end")
                 {
@@ -227,7 +227,7 @@ PKLinesList MoexKLine::parseKLine(const QByteArray &answer)
                     {
                         throw ParseException(QString("Value in column %1 on path %2 is null").arg(columnType).arg(path));
                     }
-                    tmp->closeTime = value.value();
+                    tmp->closeTime = value.value().toMSecsSinceEpoch();
 
                 }
             }
@@ -242,15 +242,15 @@ PKLinesList MoexKLine::parseKLine(const QByteArray &answer)
             {
                 emit sendLogMsg(id(), TDBLoger::MSG_CODE::WARNING_CODE,
                                 QString("The KLine received is earlier than the existing one. Received: %1 Existing: %2")
-                                    .arg(tmp->closeTime.toString(DATETIME_FORMAT))
-                                    .arg(_lastClose.toString(DATETIME_FORMAT)));
+                                    .arg(QDateTime::fromMSecsSinceEpoch(tmp->closeTime).toString(DATETIME_FORMAT))
+                                    .arg(QDateTime::fromMSecsSinceEpoch(_lastClose).toString(DATETIME_FORMAT)));
             }
 
             ++line;
         }
 
         //Последняя свеча может быть некорректно сформирована, поэтму в следующий раз нам надо получить ее еще раз
-        _lastClose = _lastClose.addMSecs(-(static_cast<qint64>(IKLine::id().type)));
+        _lastClose = _lastClose - static_cast<qint64>(IKLine::id().type);
     }
     catch (const ParseException& err)
     {

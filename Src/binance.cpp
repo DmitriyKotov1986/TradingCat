@@ -132,20 +132,19 @@ void Binance::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
 
 #ifdef QT_DEBUG
     const auto currDateTime = QDateTime::currentDateTime();
-    QDateTime start = currDateTime.addYears(100);
-    QDateTime end = currDateTime.addYears(-100);
+    qint64 start = std::numeric_limits<qint64>().max();
+    qint64 end = std::numeric_limits<qint64>().min();
     for (const auto& kline: *klines)
     {
         start = std::min(start, kline->closeTime);
         end = std::max(end, kline->closeTime);
     }
 
-
     emit sendLogMsg(STOCK_ID, Common::TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Get new klines: %1. Count: %2 from %3 to %4")
                                                                                 .arg(klines->begin()->get()->id.toString())
                                                                                 .arg(klines->size())
-                                                                                .arg(start.toString(SIMPLY_DATETIME_FORMAT))
-                                                                                .arg(end.toString(SIMPLY_DATETIME_FORMAT)));
+                                                                                .arg(QDateTime::fromMSecsSinceEpoch(start).toString(SIMPLY_DATETIME_FORMAT))
+                                                                                .arg(QDateTime::fromMSecsSinceEpoch(end).toString(SIMPLY_DATETIME_FORMAT)));
 #endif
 
     emit getKLines(STOCK_ID, klines);

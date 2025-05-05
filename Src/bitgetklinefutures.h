@@ -9,20 +9,20 @@
 #include <TradingCatCommon/ikline.h>
 #include <TradingCatCommon/stockexchange.h>
 
-class MoexKLine
+class BitgetKLineFutures
     : public TradingCatCommon::IKLine
 {
     Q_OBJECT
 
 public:
-    MoexKLine(const TradingCatCommon::KLineID& id, const QString& engines, const QString& markets, const QString& boards, const QDateTime& lastClose, QObject* parent = nullptr);
+    BitgetKLineFutures(const TradingCatCommon::KLineID& id, const QDateTime& lastClose, QObject* parent = nullptr);
 
     void start() override;
     void stop() override;
 
 private:
-    MoexKLine() = delete;
-    Q_DISABLE_COPY_MOVE(MoexKLine);
+    BitgetKLineFutures() = delete;
+    Q_DISABLE_COPY_MOVE(BitgetKLineFutures);
 
     static QString KLineTypeToString(TradingCatCommon::KLineType type);
 
@@ -35,10 +35,6 @@ private slots:
     void sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString& msg, quint64 id);
 
 private:
-    const QString _engines;
-    const QString _markets;
-    const QString _boards;
-
     quint64 _currentRequestId = 0;
     bool _isStarted = false;
 

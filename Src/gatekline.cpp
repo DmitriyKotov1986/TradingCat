@@ -45,7 +45,7 @@ QString GateKLine::KLineTypeToString(TradingCatCommon::KLineType type)
 
 GateKLine::GateKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
     : IKLine(id, parent)
-    , _lastClose(lastClose)
+    , _lastClose(lastClose.toMSecsSinceEpoch())
 {
     Q_ASSERT(!id.isEmpty());
     Q_ASSERT(id.type == KLineType::MIN1 || id.type == KLineType::MIN5);
@@ -58,7 +58,7 @@ void GateKLine::sendGetKline()
 
     //Запрашиваем немного больше свечей чтобы компенсировать разницу часов между сервером и биржей
     //лишнии свечи отбросим при парсинге
-    quint32 count = (_lastClose.msecsTo(QDateTime::currentDateTime()) / static_cast<quint64>(IKLine::id().type)) + 10;
+    quint32 count = ((QDateTime::currentDateTime().toMSecsSinceEpoch() - _lastClose) / static_cast<quint64>(IKLine::id().type)) + 10;
     if (count > 500)
     {
         count = 500;
@@ -85,12 +85,25 @@ PKLinesList GateKLine::parseKLine(const QByteArray &answer)
     {
         const auto arrayJson = JSONParseToArray(answer);
 
-        for (const auto& kline: arrayJson)
+        if (arrayJson.size() < 2)
         {
-            const auto data = kline.toArray();
+            return result;
+        }
 
-            const auto openDateTime = QDateTime::fromSecsSinceEpoch(data[0].toString().toLongLong());
-            const auto closeDateTime = openDateTime.addMSecs(static_cast<quint64>(IKLine::id().type));
+        //Последняя свеча может быть некорректно сформирована, поэтму в следующий раз нам надо получить ее еще раз
+        const auto it_klinePreEnd = std::prev(arrayJson.end());
+        for (auto it_kline = arrayJson.begin(); it_kline != it_klinePreEnd; ++it_kline)
+        {
+            const auto data = JSONReadArray(*it_kline, "Root/[]");
+
+            const auto openDateTime = data[0].toString().toLongLong() * 1000;
+            const auto closeDateTime = openDateTime + static_cast<qint64>(IKLine::id().type);
+
+            //отсеиваем лишнии свечи
+            if (_lastClose >= closeDateTime)
+            {
+                continue;
+            }
 
             auto tmp = std::make_shared<KLine>();
             tmp->openTime = openDateTime;
@@ -103,43 +116,17 @@ PKLinesList GateKLine::parseKLine(const QByteArray &answer)
             tmp->closeTime = closeDateTime;
             tmp->id = IKLine::id();
 
-            //отсеиваем лишнии свечи
-            if (_lastClose >= tmp->closeTime)
-            {
-                continue;
-            }
-
             result->emplace_back(std::move(tmp));
-        }
 
-        //Вычисляем самую позднюю свечу
-        if (result->size() > 1)
-        {
-            result->sort(
-                [](const auto& kline1, const auto& kline2)
-                {
-                    return kline1->closeTime < kline2->closeTime;
-                });
-
-            //Последняя свеча может быть некорректно сформирована
-            result->pop_back();
-
-            if (!result->empty())
-            {
-                QDateTime maxDateTime = QDateTime::currentDateTime().addYears(-100);
-                for (const auto& kline: *result)
-                {
-                    maxDateTime = std::max(maxDateTime, kline->closeTime);
-                }
-
-                _lastClose = maxDateTime;
-            }
+            //Вычисляем самую позднюю свечу
+            _lastClose = std::max(_lastClose, closeDateTime);
         }
     }
     catch (const ParseException& err)
     {
         emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parsing KLine: %1").arg(err.what()));
-        return {};
+
+        return result;
     }
 
     return result;

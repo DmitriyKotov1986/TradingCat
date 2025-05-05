@@ -1,4 +1,5 @@
 # for use valgrid: export LIBGL_ALWAYS_SOFTWARE=1
+# for use perf: sudo sysctl -w kernel.perf_event_paranoid=1
 QT = core network sql httpserver
 
 TARGET = TradingCat
@@ -17,6 +18,8 @@ HEADERS += \
     $$PWD/Src/bingxkline.h \
     $$PWD/Src/bitget.h \
     $$PWD/Src/bitgetkline.h \
+    $$PWD/Src/bitgetfutures.h \
+    $$PWD/Src/bitgetklinefutures.h \
     $$PWD/Src/bybit.h \
     $$PWD/Src/bybitkline.h \
     $$PWD/Src/config.h \
@@ -25,6 +28,8 @@ HEADERS += \
     $$PWD/Src/gatekline.h \
     $$PWD/Src/kucoin.h \
     $$PWD/Src/kucoinkline.h \
+    $$PWD/Src/kucoinfutures.h \
+    $$PWD/Src/kucoinklinefutures.h \
     $$PWD/Src/mexc.h \
     $$PWD/Src/mexckline.h \
     $$PWD/Src/moex.h \
@@ -40,6 +45,8 @@ SOURCES += \
     $$PWD/Src/binancekline.cpp \
     $$PWD/Src/bitget.cpp \
     $$PWD/Src/bitgetkline.cpp \
+    $$PWD/Src/bitgetfutures.cpp \
+    $$PWD/Src/bitgetklinefutures.cpp \
     $$PWD/Src/bingx.cpp \
     $$PWD/Src/bingxkline.cpp \
     $$PWD/Src/bybit.cpp \
@@ -50,6 +57,8 @@ SOURCES += \
     $$PWD/Src/gatekline.cpp \
     $$PWD/Src/kucoin.cpp \
     $$PWD/Src/kucoinkline.cpp \
+    $$PWD/Src/kucoinfutures.cpp \
+    $$PWD/Src/kucoinklinefutures.cpp \
     $$PWD/Src/main.cpp \
     $$PWD/Src/mexc.cpp \
     $$PWD/Src/mexckline.cpp \

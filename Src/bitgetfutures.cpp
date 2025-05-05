@@ -11,22 +11,22 @@
 #include <Common/parser.h>
 #include <TradingCatCommon/detector.h>
 
-#include "kucoinkline.h"
+#include "bitgetklinefutures.h"
 
-#include "kucoin.h"
+#include "bitgetfutures.h"
 
 using namespace Common;
 using namespace TradingCatCommon;
 
 //static
-Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.kucoin.com/"));
+Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.bitget.com/"));
 
-const StockExchangeID Kucoin::STOCK_ID("KUCOIN");
+const StockExchangeID BitgetFutures::STOCK_ID("BITGET_FUTURES");
 
 ///////////////////////////////////////////////////////////////////////////////
-/// class Kucoin
+/// class BitgetFutures
 ///
-Kucoin::Kucoin(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent)
+BitgetFutures::BitgetFutures(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent /* = nullptr */)
     : IStockExchange{STOCK_ID, parent}
     , _config(config)
     , _proxyList(proxyList)
@@ -34,12 +34,12 @@ Kucoin::Kucoin(const TradingCatCommon::StockExchangeConfig& config, const Common
     _headers.insert(QByteArray{"Content-Type"}, QByteArray{"application/json"});
 }
 
-Kucoin::~Kucoin()
+BitgetFutures::~BitgetFutures()
 {
     stop();
 }
 
-void Kucoin::start()
+void BitgetFutures::start()
 {
     Q_ASSERT(!_isStarted);
 
@@ -64,7 +64,6 @@ void Kucoin::start()
         QObject::connect(_pool, SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
                          SLOT(sendLogMsgPool(Common::TDBLoger::MSG_CODE, const QString&)));
 
-
         if (!_config.user.isEmpty())
         {
             _pool->setUserPassword(_config.user, _config.password);
@@ -76,7 +75,7 @@ void Kucoin::start()
     sendUpdateMoney();
 }
 
-void Kucoin::stop()
+void BitgetFutures::stop()
 {
     if (!_isStarted)
     {
@@ -93,19 +92,19 @@ void Kucoin::stop()
     emit finished();
 }
 
-void Kucoin::getAnswerHTTP(const QByteArray &answer, quint64 id)
+void BitgetFutures::getAnswerHTTP(const QByteArray &answer, quint64 id)
 {
     if (id != _currentRequestId)
     {
         return;
     }
 
-    _currentRequestId = 0;
+    _currentRequestId= 0;
 
     parseMoney(answer);
 }
 
-void Kucoin::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void BitgetFutures::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
 {
     Q_UNUSED(code);
     Q_UNUSED(serverCode);
@@ -122,12 +121,12 @@ void Kucoin::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverC
     restartUpdateMoney();
 }
 
-void Kucoin::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
+void BitgetFutures::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
 {
     emit sendLogMsg(STOCK_ID, category, QString("HTTP request %1: %2").arg(id).arg(msg));
 }
 
-void Kucoin::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
+void BitgetFutures::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
 {
     Q_ASSERT(!klines->empty());
 
@@ -151,50 +150,50 @@ void Kucoin::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
     emit getKLines(STOCK_ID, klines);
 }
 
-void Kucoin::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
+void BitgetFutures::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     emit errorOccurred(STOCK_ID, errorCode, QString("KLines Pool error: %1").arg(errorString));
 }
 
-void Kucoin::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void BitgetFutures::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
 {
     emit sendLogMsg(STOCK_ID, category, QString("KLines Pool: %1").arg(msg));
 }
 
-
-void Kucoin::sendUpdateMoney()
+void BitgetFutures::sendUpdateMoney()
 {
     Q_CHECK_PTR(_http);
 
     Q_ASSERT(_currentRequestId == 0);
     Q_ASSERT(_isStarted);
 
+    QUrlQuery urlQuery;
+    urlQuery.addQueryItem("productType", "USDT-FUTURES");
+
     QUrl url(*BASE_URL);
-    url.setPath("/api/v2/symbols");
+    url.setPath("/api/v2/mix/market/tickers");
+    url.setQuery(urlQuery);
 
     _currentRequestId = _http->send(url, Common::HTTPSSLQuery::RequestType::GET);
 }
 
-void Kucoin::restartUpdateMoney()
+void BitgetFutures::restartUpdateMoney()
 {
     QTimer::singleShot(60 * 1000, this, [this](){ if (_isStarted) this->sendUpdateMoney(); });
 
     emit sendLogMsg(STOCK_ID, TDBLoger::MSG_CODE::WARNING_CODE, QString("The search for the list of KLines failed with an error. Retry after 60 s"));
 }
 
-void Kucoin::parseMoney(const QByteArray &answer)
+void BitgetFutures::parseMoney(const QByteArray &answer)
 {
     try
-    {
+    {   
         const auto rootJson = JSONParseToMap(answer);
-        const auto moneyDataArrayJson = JSONReadMapToArray(rootJson, "data", "Root/data");
-
-        for (const auto& moneyDataValueJson: moneyDataArrayJson)
+        const auto dataJson = JSONReadMapToArray(rootJson, "data", "Root/data");
+        for (const auto& symbolDataValueJson: dataJson)
         {
-
-            const auto moneyDataJson = JSONReadMap(moneyDataValueJson, "Root/data/[]");
-            const auto moneyName =JSONReadMapString(moneyDataJson, "symbol", "Root/data/[]/symbol", false);
-
+            const auto symbolDataJson = JSONReadMap(symbolDataValueJson, "Root/data/[]");
+            const auto moneyName = JSONReadMapString(symbolDataJson, "symbol", "Root/symbols/[]", false);
             if (moneyName.has_value())
             {
                 const auto& moneyNameStr = moneyName.value();
@@ -251,7 +250,7 @@ void Kucoin::parseMoney(const QByteArray &answer)
     makeKLines();
 }
 
-void Kucoin::makeKLines()
+void BitgetFutures::makeKLines()
 {
     quint32 addKLineCount = 0;
     quint32 eraseKLineCount = 0;
@@ -279,7 +278,7 @@ void Kucoin::makeKLines()
     {
         if (!_pool->isExitsKLine(klineId))
         {
-            auto kline = std::make_unique<KucoinKLine>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));;
+            auto kline = std::make_unique<BitgetKLineFutures>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));;
 
             _pool->addKLine(std::move(kline));
 

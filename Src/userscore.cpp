@@ -273,9 +273,9 @@ void UsersCore::errorOccurredUsers(Common::EXIT_CODE errorCode, const QString &e
 qint64 UsersCore::getId()
 {
 #ifndef QT_DEBUG
-   return QRandomGenerator64::global()->bounded(static_cast<qint64>(1), std::numeric_limits<qint64>().max());
+   return QRandomGenerator64::global()->bounded(static_cast<qint32>(1), std::numeric_limits<qint32>().max());
 #else
-    static qint64 id = 0;
+    static qint32 id = 0;
 
     return ++id;
 #endif

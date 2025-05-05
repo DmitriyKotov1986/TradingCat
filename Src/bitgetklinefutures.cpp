@@ -11,16 +11,16 @@
 //My
 #include <Common/parser.h>
 
-#include "okxkline.h"
+#include "bitgetklinefutures.h"
 
 using namespace TradingCatCommon;
 using namespace Common;
 
-Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://www.okx.com/"));
+Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.bitget.com/"));
 static const quint64 MIN_REQUEST_PERION = 60 * 1000; // 5min
 static const quint64 MIN_REQUEST_PERION_429 = 10 * 60 * 1000; //10 min
 
-QString OkxKLine::KLineTypeToString(TradingCatCommon::KLineType type)
+QString BitgetKLineFutures::KLineTypeToString(TradingCatCommon::KLineType type)
 {
     switch (type)
     {
@@ -28,9 +28,9 @@ QString OkxKLine::KLineTypeToString(TradingCatCommon::KLineType type)
     case KLineType::MIN5: return "5m";
     case KLineType::MIN15: return "15m";
     case KLineType::MIN30: return "30m";
-    case KLineType::MIN60: return "60m";
-    case KLineType::HOUR4: return "240m";
-    case KLineType::HOUR8: return "360m";
+    case KLineType::MIN60: return "1H";
+    case KLineType::HOUR4: return "4H";
+    case KLineType::HOUR8: return "8H";
     case KLineType::DAY1: return "1D";
     case KLineType::WEEK1: return "1W";
     default:
@@ -40,7 +40,7 @@ QString OkxKLine::KLineTypeToString(TradingCatCommon::KLineType type)
     return "UNKNOW";
 }
 
-OkxKLine::OkxKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
+BitgetKLineFutures::BitgetKLineFutures(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
     : IKLine(id, parent)
     , _lastClose(lastClose.toMSecsSinceEpoch())
 {
@@ -48,7 +48,7 @@ OkxKLine::OkxKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastClo
     Q_ASSERT(id.type == KLineType::MIN1 || id.type == KLineType::MIN5);
 }
 
-void OkxKLine::sendGetKline()
+void BitgetKLineFutures::sendGetKline()
 {
     Q_ASSERT(_currentRequestId == 0);
     Q_ASSERT(_isStarted);
@@ -62,20 +62,20 @@ void OkxKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("instId", id().symbol);
-    urlQuery.addQueryItem("bar", KLineTypeToString(IKLine::id().type));
+    urlQuery.addQueryItem("productType", "USDT-FUTURES");
+    urlQuery.addQueryItem("symbol", id().symbol);
+    urlQuery.addQueryItem("granularity", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
-//    urlQuery.addQueryItem("before", QString::number(_lastClose.toMSecsSinceEpoch()));
 
     QUrl url(*BASE_URL);
-    url.setPath("/api/v5/market/candles");
+    url.setPath("/api/v2/mix/market/candles");
     url.setQuery(urlQuery);
 
     auto http = getHTTP();
     _currentRequestId = http->send(url, Common::HTTPSSLQuery::RequestType::GET);
 }
 
-PKLinesList OkxKLine::parseKLine(const QByteArray &answer)
+PKLinesList BitgetKLineFutures::parseKLine(const QByteArray &answer)
 {
     PKLinesList result = std::make_shared<KLinesList>();
 
@@ -83,17 +83,17 @@ PKLinesList OkxKLine::parseKLine(const QByteArray &answer)
     {
         const auto rootJson = JSONParseToMap(answer);
         const auto data = JSONReadMapToArray(rootJson, "data", "Root/data");
+
         if (data.size() < 2)
         {
             return result;
         }
 
         //Последняя свеча может быть некорректно сформирована, поэтму в следующий раз нам надо получить ее еще раз
-        const auto it_klinePreEnd = std::prev(data.end());
-        for (auto it_kline = it_klinePreEnd; it_kline != data.begin(); --it_kline)
+        const auto it_dataPreEnd = std::prev(data.end());
+        for (auto it_data = data.begin(); it_data != it_dataPreEnd; ++it_data)
         {
-            // Start time of the candle cycle, opening price, closing price, highest price, Lowest price, Transaction amount, Transaction volume
-            const auto kline = JSONReadArray(*it_kline, "Root/data/[]");
+            const auto kline = JSONReadArray(*it_data, "Root/data/[]");
 
             const auto openDateTime = kline[0].toString().toLongLong();
             const auto closeDateTime = openDateTime + static_cast<qint64>(IKLine::id().type);
@@ -133,23 +133,23 @@ PKLinesList OkxKLine::parseKLine(const QByteArray &answer)
     return result;
 }
 
-void OkxKLine::getAnswerHTTP(const QByteArray &answer, quint64 id)
+void BitgetKLineFutures::getAnswerHTTP(const QByteArray &answer, quint64 id)
 {
     if (id != _currentRequestId)
     {
         return;
     }
 
-    _currentRequestId = 0;
-
     addKLines(parseKLine(answer));
+
+    _currentRequestId = 0;
 
     const auto type = static_cast<quint64>(IKLine::id().type);
 
     QTimer::singleShot(type * 2, this, [this](){ this->sendGetKline(); });
 }
 
-void OkxKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void BitgetKLineFutures::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
 {
     Q_UNUSED(code);
 
@@ -175,7 +175,7 @@ void OkxKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serve
                        [this](){ this->sendGetKline(); });
 }
 
-void OkxKLine::start()
+void BitgetKLineFutures::start()
 {
     auto http = getHTTP();
 
@@ -193,7 +193,7 @@ void OkxKLine::start()
     sendGetKline();
 }
 
-void OkxKLine::stop()
+void BitgetKLineFutures::stop()
 {
     if (!_isStarted)
     {
@@ -203,7 +203,7 @@ void OkxKLine::stop()
     _isStarted = false;
 }
 
-void OkxKLine::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
+void BitgetKLineFutures::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
 {
     Q_UNUSED(id);
 

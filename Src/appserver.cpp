@@ -308,8 +308,8 @@ bool AppServer::makeServer()
                 auto h = resp.headers();
                 h.append(QHttpHeaders::WellKnownHeader::Server, _serverConfig.name);
                 h.append(QHttpHeaders::WellKnownHeader::ContentType, "application/json");
-             //   h.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(resp.data().size()));
 #ifndef QT_NO_DEBUG
+                h.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(resp.data().size()));
                 h.append(QHttpHeaders::WellKnownHeader::AccessControlAllowOrigin, "*");
                 h.append(QHttpHeaders::WellKnownHeader::AccessControlAllowHeaders, "*");
                 h.append(QHttpHeaders::WellKnownHeader::AccessControlAllowMethods, "*");
