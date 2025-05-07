@@ -1,3 +1,6 @@
+//STL
+#include <algorithm>
+
 //Qt
 #include <QUrl>
 #include <QUrlQuery>
@@ -11,16 +14,16 @@
 //My
 #include <Common/parser.h>
 
-#include "bingxkline.h"
+#include "gateklinefutures.h"
 
 using namespace TradingCatCommon;
 using namespace Common;
 
-Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://open-api.bingx.com/"));
-static const quint64 MIN_REQUEST_PERION = 60 * 1000; // 5min
+Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.gateio.ws/"));
+static const quint64 MIN_REQUEST_PERION = 60 * 1000; // 1min
 static const quint64 MIN_REQUEST_PERION_429 = 10 * 60 * 1000; //10 min
 
-QString BingxKLine::KLineTypeToString(TradingCatCommon::KLineType type)
+QString GateKLineFutures::KLineTypeToString(TradingCatCommon::KLineType type)
 {
     switch (type)
     {
@@ -40,7 +43,7 @@ QString BingxKLine::KLineTypeToString(TradingCatCommon::KLineType type)
     return "UNKNOW";
 }
 
-BingxKLine::BingxKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
+GateKLineFutures::GateKLineFutures(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
     : IKLine(id, parent)
     , _lastClose(lastClose.toMSecsSinceEpoch())
 {
@@ -48,7 +51,7 @@ BingxKLine::BingxKLine(const TradingCatCommon::KLineID &id, const QDateTime& las
     Q_ASSERT(id.type == KLineType::MIN1 || id.type == KLineType::MIN5);
 }
 
-void BingxKLine::sendGetKline()
+void GateKLineFutures::sendGetKline()
 {
     Q_ASSERT(_currentRequestId == 0);
     Q_ASSERT(_isStarted);
@@ -56,45 +59,44 @@ void BingxKLine::sendGetKline()
     //Запрашиваем немного больше свечей чтобы компенсировать разницу часов между сервером и биржей
     //лишнии свечи отбросим при парсинге
     quint32 count = ((QDateTime::currentDateTime().toMSecsSinceEpoch() - _lastClose) / static_cast<quint64>(IKLine::id().type)) + 10;
-    if (count > 1400)
+    if (count > 500)
     {
-        count = 1400;
+        count = 500;
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", id().symbol);
+    urlQuery.addQueryItem("contract", IKLine::id().symbol);
     urlQuery.addQueryItem("interval", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 
     QUrl url(*BASE_URL);
-    url.setPath("/openApi/swap/v3/quote/klines");
+    url.setPath("/api/v4/futures/usdt/candlesticks");
     url.setQuery(urlQuery);
 
     auto http = getHTTP();
     _currentRequestId = http->send(url, Common::HTTPSSLQuery::RequestType::GET);
 }
 
-PKLinesList BingxKLine::parseKLine(const QByteArray &answer)
+PKLinesList GateKLineFutures::parseKLine(const QByteArray &answer)
 {
     PKLinesList result = std::make_shared<KLinesList>();
 
     try
     {
-        const auto rootJson = JSONParseToMap(answer);
-        const auto data = JSONReadMapToArray(rootJson, "data", "Root/data");
+        const auto arrayJson = JSONParseToArray(answer);
 
-        if (data.size() < 2)
+        if (arrayJson.size() < 2)
         {
             return result;
         }
 
         //Последняя свеча может быть некорректно сформирована, поэтму в следующий раз нам надо получить ее еще раз
-        const auto it_dataPreEnd = std::prev(data.end());
-        for (auto it_data = it_dataPreEnd; it_data != data.begin(); --it_data)
+        const auto it_klinePreEnd = std::prev(arrayJson.end());
+        for (auto it_kline = arrayJson.begin(); it_kline != it_klinePreEnd; ++it_kline)
         {
-            const auto kline = JSONReadMap(*it_data, "Root/data/[]");
+            const auto data = JSONReadMap(*it_kline, "Root/[]");
 
-            const auto openDateTime = JSONReadMapNumber<qint64>(kline, "time", "Root/data/[]/time", 0).value_or(0);
+            const auto openDateTime = JSONReadMapNumber<qint64>(data, "t", "Root/[]/t", 0).value_or(0) * 1000;
             const auto closeDateTime = openDateTime + static_cast<qint64>(IKLine::id().type);
 
             //отсеиваем лишнии свечи
@@ -105,12 +107,12 @@ PKLinesList BingxKLine::parseKLine(const QByteArray &answer)
 
             auto tmp = std::make_shared<KLine>();
             tmp->openTime = openDateTime;
-            tmp->open = JSONReadMapNumber<double>(kline, "open", "Root/data/[]/open", 0.0f).value_or(0.0f);
-            tmp->high = JSONReadMapNumber<double>(kline, "high", "Root/data/[]/high", 0.0f).value_or(0.0f);
-            tmp->low = JSONReadMapNumber<double>(kline, "low", "Root/data/[]/low", 0.0f).value_or(0.0f);
-            tmp->close = JSONReadMapNumber<double>(kline, "close", "Root/data/[]/close", 0.0f).value_or(0.0f);
-            tmp->volume =JSONReadMapNumber<double>(kline, "volume", "Root/data/[]/volume", 0.0f).value_or(0.0f);
-            tmp->quoteAssetVolume = JSONReadMapNumber<double>(kline, "volume", "Root/data/[]/volume", 0.0f).value_or(0.0f);
+            tmp->quoteAssetVolume = JSONReadMapNumber<float>(data, "sum", "Root/[]/sum", 0.0f).value_or(0.0f);
+            tmp->close = JSONReadMapNumber<float>(data, "c", "Root/[]/c", 0.0f).value_or(0.0f);
+            tmp->high = JSONReadMapNumber<float>(data, "h", "Root/[]/h", 0.0f).value_or(0.0f);
+            tmp->low = JSONReadMapNumber<float>(data, "l", "Root/[]/l", 0.0f).value_or(0.0f);
+            tmp->open = JSONReadMapNumber<float>(data, "o", "Root/[]/o", 0.0f).value_or(0.0f);
+            tmp->volume = JSONReadMapNumber<float>(data, "v", "Root/[]/v", 0.0f).value_or(0.0f);
             tmp->closeTime = closeDateTime;
             tmp->id = IKLine::id();
 
@@ -122,8 +124,6 @@ PKLinesList BingxKLine::parseKLine(const QByteArray &answer)
     }
     catch (const ParseException& err)
     {
-        result->clear();
-
         emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parsing KLine: %1 Source: %2").arg(err.what()).arg(answer));
 
         return result;
@@ -132,23 +132,23 @@ PKLinesList BingxKLine::parseKLine(const QByteArray &answer)
     return result;
 }
 
-void BingxKLine::getAnswerHTTP(const QByteArray &answer, quint64 id)
+void GateKLineFutures::getAnswerHTTP(const QByteArray &answer, quint64 id)
 {
     if (id != _currentRequestId)
     {
         return;
     }
 
-    addKLines(parseKLine(answer));
-
     _currentRequestId = 0;
+
+    addKLines(parseKLine(answer));
 
     const auto type = static_cast<quint64>(IKLine::id().type);
 
     QTimer::singleShot(type * 2, this, [this](){ this->sendGetKline(); });
 }
 
-void BingxKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void GateKLineFutures::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
 {
     Q_UNUSED(code);
 
@@ -174,7 +174,7 @@ void BingxKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 ser
                        [this](){ this->sendGetKline(); });
 }
 
-void BingxKLine::start()
+void GateKLineFutures::start()
 {
     auto http = getHTTP();
 
@@ -192,7 +192,7 @@ void BingxKLine::start()
     sendGetKline();
 }
 
-void BingxKLine::stop()
+void GateKLineFutures::stop()
 {
     if (!_isStarted)
     {
@@ -202,7 +202,7 @@ void BingxKLine::stop()
     _isStarted = false;
 }
 
-void BingxKLine::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
+void GateKLineFutures::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
 {
     Q_UNUSED(id);
 

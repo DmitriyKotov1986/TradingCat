@@ -26,6 +26,8 @@ HEADERS += \
     $$PWD/Src/core.h \
     $$PWD/Src/gate.h \
     $$PWD/Src/gatekline.h \
+    $$PWD/Src/gatefutures.h \
+    $$PWD/Src/gateklinefutures.h \
     $$PWD/Src/kucoin.h \
     $$PWD/Src/kucoinkline.h \
     $$PWD/Src/kucoinfutures.h \
@@ -55,6 +57,8 @@ SOURCES += \
     $$PWD/Src/core.cpp \
     $$PWD/Src/gate.cpp \
     $$PWD/Src/gatekline.cpp \
+    $$PWD/Src/gatefutures.cpp \
+    $$PWD/Src/gateklinefutures.cpp \
     $$PWD/Src/kucoin.cpp \
     $$PWD/Src/kucoinkline.cpp \
     $$PWD/Src/kucoinfutures.cpp \

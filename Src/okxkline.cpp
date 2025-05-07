@@ -106,12 +106,12 @@ PKLinesList OkxKLine::parseKLine(const QByteArray &answer)
 
             auto tmp = std::make_shared<KLine>();
             tmp->openTime = openDateTime;
-            tmp->open = kline[1].toString().toDouble();
-            tmp->high = kline[2].toString().toDouble();
-            tmp->low = kline[3].toString().toDouble();
-            tmp->close = kline[4].toString().toDouble();
-            tmp->volume = kline[5].toString().toDouble();
-            tmp->quoteAssetVolume = kline[6].toString().toDouble();
+            tmp->open = kline[1].toString().toFloat();
+            tmp->high = kline[2].toString().toFloat();
+            tmp->low = kline[3].toString().toFloat();
+            tmp->close = kline[4].toString().toFloat();
+            tmp->volume = kline[5].toString().toFloat();
+            tmp->quoteAssetVolume = kline[6].toString().toFloat();
             tmp->closeTime = closeDateTime;
             tmp->id = IKLine::id();
 
@@ -125,7 +125,7 @@ PKLinesList OkxKLine::parseKLine(const QByteArray &answer)
     {
         result->clear();
 
-        emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parsing KLine: %1").arg(err.what()));
+        emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parsing KLine: %1 Source: %2").arg(err.what()).arg(answer));
 
         return result;
     }

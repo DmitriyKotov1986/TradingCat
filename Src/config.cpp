@@ -18,6 +18,7 @@
 #include "okx.h"
 #include "kucoinfutures.h"
 #include "bitgetfutures.h"
+#include "gatefutures.h"
 
 #include "config.h"
 
@@ -35,7 +36,8 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
                               Okx::STOCK_ID.name,
                               Binance::STOCK_ID.name,
                               KucoinFutures::STOCK_ID.name,
-                              BitgetFutures::STOCK_ID.name
+                              BitgetFutures::STOCK_ID.name,
+                              GateFutures::STOCK_ID.name
                           }));
 
 //static
@@ -159,10 +161,10 @@ Config::Config(const QString& configFileName) :
     ini.endGroup();
 
     //PROXY_N
-    quint16 currentProxyIndex = 0;
-    for (const auto& group: groups)
+    for (quint8 currentProxyIndex = 0; currentProxyIndex < std::numeric_limits<quint8>().max(); ++currentProxyIndex)
     {
-        if (group == QString("PROXY_%1").arg(currentProxyIndex))
+        const auto group =  QString("PROXY_%1").arg(currentProxyIndex);
+        if (groups.contains(group))
         {
             ini.beginGroup(group);
 
@@ -190,16 +192,14 @@ Config::Config(const QString& configFileName) :
             ini.endGroup();
 
             _proxyDataList.emplace_back(std::move(tmp));
-
-            ++currentProxyIndex;
         }
     }
 
     //STOCK_EXCHANGE_N
-    quint16 currentStockExchangeIndex = 0;
-    for (const auto& group: groups)
+    for (quint8 currentStockExchangeIndex = 0; currentStockExchangeIndex < std::numeric_limits<quint8>().max(); ++currentStockExchangeIndex)
     {
-        if (group == QString("STOCK_EXCHANGE_%1").arg(currentStockExchangeIndex))
+        const auto group = QString("STOCK_EXCHANGE_%1").arg(currentStockExchangeIndex);
+        if (groups.contains(group))
         {
             ini.beginGroup(group);
 
@@ -233,8 +233,6 @@ Config::Config(const QString& configFileName) :
             ini.endGroup();
 
             _stockExchangeConfigList.emplace_back(std::move(tmp));
-
-            ++currentStockExchangeIndex;
         }
     }
 

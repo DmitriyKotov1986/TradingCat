@@ -165,9 +165,9 @@ QString UsersCore::detect(const TradingCatCommon::DetectQuery &query)
 
     klinesDetectedList.clear();
     sessionData.lastData = QDateTime::currentDateTime();
-
+#ifndef QT_NO_DEBUG
     emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Send detect data. SessionID: %2").arg(query.id()).arg(sessionId));
-
+#endif
     return result;
 }
 

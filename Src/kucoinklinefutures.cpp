@@ -65,7 +65,6 @@ void KucoinKLineFutures::sendGetKline()
     urlQuery.addQueryItem("symbol", IKLine::id().symbol);
     urlQuery.addQueryItem("granularity", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("from", QString::number(_lastClose));
-    urlQuery.addQueryItem("to", QString::number(QDateTime::currentDateTime().toMSecsSinceEpoch()));
 
     QUrl url(*BASE_URL);
     url.setPath("/api/v1/kline/query");
@@ -116,6 +115,17 @@ PKLinesList KucoinKLineFutures::parseKLine(const QByteArray &answer)
             tmp->closeTime = closeDateTime;
             tmp->id = IKLine::id();
 
+            // qWarning() << "Kucoin futures delta volume:" << tmp->openTime <<
+            //     QDateTime::fromMSecsSinceEpoch(tmp->openTime).toString("hh:mm") <<
+            //     tmp->id.toString() <<
+            //     tmp->deltaKLine() <<
+            //     tmp->volumeKLine() <<
+            //     "O:" << tmp->open <<
+            //     "H:" << tmp->high <<
+            //     "L:" << tmp->low <<
+            //     "C:" << tmp->close <<
+            //     "V:" << tmp->volume;
+
             result->emplace_back(std::move(tmp));
 
             //Вычисляем самую позднюю свечу
@@ -126,7 +136,7 @@ PKLinesList KucoinKLineFutures::parseKLine(const QByteArray &answer)
     {
         result->clear();
 
-        emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parsing KLine: %1").arg(err.what()));
+        emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parsing KLine: %1 Source: %2").arg(err.what()).arg(answer));
 
         return result;
     }

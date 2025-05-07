@@ -14,6 +14,7 @@
 #include "okx.h"
 #include "kucoinfutures.h"
 #include "bitgetfutures.h"
+#include "gatefutures.h"
 
 #include "core.h"
 
@@ -106,7 +107,6 @@ void Core::start()
 
         connect(_detectorThread->detector.get(), SIGNAL(klineDetect(qint64, const TradingCatCommon::Detector::PKLineDetectData&)),
                 _usersCoreThread->usersCore.get(), SLOT(klineDetect(qint64, const TradingCatCommon::Detector::PKLineDetectData&)));
-
 
     }
 
@@ -347,6 +347,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const TradingCatCommon::S
     else if (stockExchangeConfig.type == BitgetFutures::STOCK_ID)
     {
         return std::make_unique<BitgetFutures>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == GateFutures::STOCK_ID)
+    {
+        return std::make_unique<GateFutures>(stockExchangeConfig, _proxyList);
     }
 
     return nullptr;

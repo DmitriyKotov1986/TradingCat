@@ -11,22 +11,22 @@
 #include <Common/parser.h>
 #include <TradingCatCommon/detector.h>
 
-#include "bybitkline.h"
+#include "gateklinefutures.h"
 
-#include "bybit.h"
+#include "gatefutures.h"
 
 using namespace Common;
 using namespace TradingCatCommon;
 
 //static
-Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.bybit.com/"));
+Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.gateio.ws/"));
 
-const StockExchangeID Bybit::STOCK_ID("BYBIT");
+const StockExchangeID GateFutures::STOCK_ID("GATE_FUTURES");
 
 ///////////////////////////////////////////////////////////////////////////////
-/// class Bybit
+/// class GateFutures
 ///
-Bybit::Bybit(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent)
+GateFutures::GateFutures(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent)
     : IStockExchange{STOCK_ID, parent}
     , _config(config)
     , _proxyList(proxyList)
@@ -34,12 +34,12 @@ Bybit::Bybit(const TradingCatCommon::StockExchangeConfig& config, const Common::
     _headers.insert(QByteArray{"Content-Type"}, QByteArray{"application/json"});
 }
 
-Bybit::~Bybit()
+GateFutures::~GateFutures()
 {
     stop();
 }
 
-void Bybit::start()
+void GateFutures::start()
 {
     Q_ASSERT(!_isStarted);
 
@@ -76,7 +76,7 @@ void Bybit::start()
     sendUpdateMoney();
 }
 
-void Bybit::stop()
+void GateFutures::stop()
 {
     if (!_isStarted)
     {
@@ -93,7 +93,7 @@ void Bybit::stop()
     emit finished();
 }
 
-void Bybit::getAnswerHTTP(const QByteArray &answer, quint64 id)
+void GateFutures::getAnswerHTTP(const QByteArray &answer, quint64 id)
 {
     if (id != _currentRequestId)
     {
@@ -105,7 +105,7 @@ void Bybit::getAnswerHTTP(const QByteArray &answer, quint64 id)
     parseMoney(answer);
 }
 
-void Bybit::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void GateFutures::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
 {
     Q_UNUSED(code);
     Q_UNUSED(serverCode);
@@ -114,6 +114,7 @@ void Bybit::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCo
     {
         return;
     }
+
     _currentRequestId = 0;
 
     emit sendLogMsg(STOCK_ID, Common::TDBLoger::MSG_CODE::WARNING_CODE, QString("HTTP request %1 failed with an error: %2").arg(id).arg(msg));
@@ -121,12 +122,12 @@ void Bybit::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCo
     restartUpdateMoney();
 }
 
-void Bybit::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
+void GateFutures::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
 {
     emit sendLogMsg(STOCK_ID, category, QString("HTTP request %1: %2").arg(id).arg(msg));
 }
 
-void Bybit::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
+void GateFutures::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
 {
     Q_ASSERT(!klines->empty());
 
@@ -150,53 +151,46 @@ void Bybit::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
     emit getKLines(STOCK_ID, klines);
 }
 
-
-void Bybit::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
+void GateFutures::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     emit errorOccurred(STOCK_ID, errorCode, QString("KLines Pool error: %1").arg(errorString));
 }
 
-void Bybit::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void GateFutures::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
 {
     emit sendLogMsg(STOCK_ID, category, QString("KLines Pool: %1").arg(msg));
 }
 
 
-void Bybit::sendUpdateMoney()
+void GateFutures::sendUpdateMoney()
 {
     Q_CHECK_PTR(_http);
 
     Q_ASSERT(_currentRequestId == 0);
     Q_ASSERT(_isStarted);
 
-    QUrlQuery query;
-    query.addQueryItem("category", "spot");
-
     QUrl url(*BASE_URL);
-    url.setPath("/v5/market/instruments-info");
-    url.setQuery(query);
+    url.setPath("/api/v4/futures/usdt/contracts");
 
     _currentRequestId = _http->send(url, Common::HTTPSSLQuery::RequestType::GET);
 }
 
-void Bybit::restartUpdateMoney()
+void GateFutures::restartUpdateMoney()
 {
     QTimer::singleShot(60 * 1000, this, [this](){ if (_isStarted) this->sendUpdateMoney(); });
 
     emit sendLogMsg(STOCK_ID, TDBLoger::MSG_CODE::WARNING_CODE, QString("The search for the list of KLines failed with an error. Retry after 60 s"));
 }
 
-void Bybit::parseMoney(const QByteArray &answer)
+void GateFutures::parseMoney(const QByteArray &answer)
 {
     try
     {   
-        const auto rootJson = JSONParseToMap(answer);
-        const auto resultJson = JSONReadMapToMap(rootJson, "result", "Root/result");
-        const auto moneyListJson = JSONReadMapToArray(resultJson, "list", "Root/result/list");
+        const auto moneyListJson = JSONParseToArray(answer);
         for (const auto& moneyDataValueJson: moneyListJson)
         {
-            const auto moneyDataJson = JSONReadMap(moneyDataValueJson, "Root/result/list/[]");
-            const auto moneyName = JSONReadMapString(moneyDataJson, "symbol", "Root/result/list/[]/symbol", false);
+            const auto moneyDataJson = JSONReadMap(moneyDataValueJson, "Root");
+            const auto moneyName = JSONReadMapString(moneyDataJson, "name", "Root/[]/name", false);
             if (moneyName.has_value())
             {
                 const auto& moneyNameStr = moneyName.value();
@@ -253,7 +247,7 @@ void Bybit::parseMoney(const QByteArray &answer)
     makeKLines();
 }
 
-void Bybit::makeKLines()
+void GateFutures::makeKLines()
 {
     quint32 addKLineCount = 0;
     quint32 eraseKLineCount = 0;
@@ -281,7 +275,7 @@ void Bybit::makeKLines()
     {
         if (!_pool->isExitsKLine(klineId))
         {
-            auto kline = std::make_unique<BybitKLine>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));;
+            auto kline = std::make_unique<GateKLineFutures>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));;
 
             _pool->addKLine(std::move(kline));
 

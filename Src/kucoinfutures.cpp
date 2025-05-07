@@ -279,7 +279,7 @@ void KucoinFutures::makeKLines()
     {
         if (!_pool->isExitsKLine(klineId))
         {
-            auto kline = std::make_unique<KucoinKLineFutures>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));;
+            auto kline = std::make_unique<KucoinKLineFutures>(klineId, QDateTime::currentDateTime().addSecs(-(60 * 60 * 3)).addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));
 
             _pool->addKLine(std::move(kline));
 
