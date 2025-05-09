@@ -22,6 +22,8 @@ HEADERS += \
     $$PWD/Src/bitgetklinefutures.h \
     $$PWD/Src/bybit.h \
     $$PWD/Src/bybitkline.h \
+    $$PWD/Src/bybitfutures.h \
+    $$PWD/Src/bybitklinefutures.h \
     $$PWD/Src/config.h \
     $$PWD/Src/core.h \
     $$PWD/Src/gate.h \
@@ -38,6 +40,8 @@ HEADERS += \
     $$PWD/Src/moexkline.h \
     $$PWD/Src/okx.h \
     $$PWD/Src/okxkline.h \
+    $$PWD/Src/htx.h \
+    $$PWD/Src/htxkline.h \
     $$PWD/Src/userscore.h \
     $$PWD/Src/usersdata.h
 
@@ -53,6 +57,8 @@ SOURCES += \
     $$PWD/Src/bingxkline.cpp \
     $$PWD/Src/bybit.cpp \
     $$PWD/Src/bybitkline.cpp \
+    $$PWD/Src/bybitfutures.cpp \
+    $$PWD/Src/bybitklinefutures.cpp \
     $$PWD/Src/config.cpp \
     $$PWD/Src/core.cpp \
     $$PWD/Src/gate.cpp \
@@ -70,6 +76,8 @@ SOURCES += \
     $$PWD/Src/moexkline.cpp \
     $$PWD/Src/okx.cpp \
     $$PWD/Src/okxkline.cpp \
+    $$PWD/Src/htx.cpp \
+    $$PWD/Src/htxkline.cpp \
     $$PWD/Src/userscore.cpp \
     $$PWD/Src/usersdata.cpp
 

@@ -12,9 +12,11 @@
 #include "bitget.h"
 #include "bingx.h"
 #include "okx.h"
+#include "htx.h"
 #include "kucoinfutures.h"
 #include "bitgetfutures.h"
 #include "gatefutures.h"
+#include "bybitfutures.h"
 
 #include "core.h"
 
@@ -338,6 +340,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const TradingCatCommon::S
     {
         return std::make_unique<Okx>(stockExchangeConfig, _proxyList);
     }
+    else if (stockExchangeConfig.type == Htx::STOCK_ID)
+    {
+        return std::make_unique<Htx>(stockExchangeConfig, _proxyList);
+    }
 
     // Futures
     else if (stockExchangeConfig.type == KucoinFutures::STOCK_ID)
@@ -351,6 +357,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const TradingCatCommon::S
     else if (stockExchangeConfig.type == GateFutures::STOCK_ID)
     {
         return std::make_unique<GateFutures>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == BybitFutures::STOCK_ID)
+    {
+        return std::make_unique<BybitFutures>(stockExchangeConfig, _proxyList);
     }
 
     return nullptr;
