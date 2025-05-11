@@ -21,6 +21,7 @@
 #include "bitgetfutures.h"
 #include "gatefutures.h"
 #include "bybitfutures.h"
+#include "mexcfutures.h"
 
 #include "config.h"
 
@@ -41,7 +42,8 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
                               KucoinFutures::STOCK_ID.name,
                               BitgetFutures::STOCK_ID.name,
                               BybitFutures::STOCK_ID.name,
-                              GateFutures::STOCK_ID.name
+                              GateFutures::STOCK_ID.name,
+                              MexcFutures::STOCK_ID.name
                           }));
 
 //static

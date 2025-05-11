@@ -42,7 +42,7 @@ QString KucoinKLineFutures::KLineTypeToString(TradingCatCommon::KLineType type)
 
 KucoinKLineFutures::KucoinKLineFutures(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
     : IKLine(id, parent)
-    , _lastClose(lastClose.toMSecsSinceEpoch())
+    , _lastClose(lastClose.addMSecs(static_cast<qint64>(IKLine::id().type) / 2).toMSecsSinceEpoch())
 {
     Q_ASSERT(!id.isEmpty());
     Q_ASSERT(id.type == KLineType::MIN1 || id.type == KLineType::MIN5);
@@ -64,7 +64,7 @@ void KucoinKLineFutures::sendGetKline()
     QUrlQuery urlQuery;
     urlQuery.addQueryItem("symbol", IKLine::id().symbol);
     urlQuery.addQueryItem("granularity", KLineTypeToString(IKLine::id().type));
-    urlQuery.addQueryItem("from", QString::number(_lastClose));
+    urlQuery.addQueryItem("from", QString::number(_lastClose - static_cast<quint64>(IKLine::id().type) * 10));
 
     QUrl url(*BASE_URL);
     url.setPath("/api/v1/kline/query");

@@ -42,7 +42,7 @@ QString OkxKLine::KLineTypeToString(TradingCatCommon::KLineType type)
 
 OkxKLine::OkxKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, QObject *parent /* = nullptr */)
     : IKLine(id, parent)
-    , _lastClose(lastClose.toMSecsSinceEpoch())
+    , _lastClose(lastClose.addMSecs(static_cast<quint64>(IKLine::id().type) / 2).toMSecsSinceEpoch())
 {
     Q_ASSERT(!id.isEmpty());
     Q_ASSERT(id.type == KLineType::MIN1 || id.type == KLineType::MIN5);

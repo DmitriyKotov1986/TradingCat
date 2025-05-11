@@ -17,6 +17,7 @@
 #include "bitgetfutures.h"
 #include "gatefutures.h"
 #include "bybitfutures.h"
+#include "mexcfutures.h"
 
 #include "core.h"
 
@@ -361,6 +362,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const TradingCatCommon::S
     else if (stockExchangeConfig.type == BybitFutures::STOCK_ID)
     {
         return std::make_unique<BybitFutures>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == MexcFutures::STOCK_ID)
+    {
+        return std::make_unique<MexcFutures>(stockExchangeConfig, _proxyList);
     }
 
     return nullptr;

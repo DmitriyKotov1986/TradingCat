@@ -36,6 +36,8 @@ HEADERS += \
     $$PWD/Src/kucoinklinefutures.h \
     $$PWD/Src/mexc.h \
     $$PWD/Src/mexckline.h \
+    $$PWD/Src/mexcfutures.h \
+    $$PWD/Src/mexcklinefutures.h \
     $$PWD/Src/moex.h \
     $$PWD/Src/moexkline.h \
     $$PWD/Src/okx.h \
@@ -72,6 +74,8 @@ SOURCES += \
     $$PWD/Src/main.cpp \
     $$PWD/Src/mexc.cpp \
     $$PWD/Src/mexckline.cpp \
+    $$PWD/Src/mexcfutures.cpp \
+    $$PWD/Src/mexcklinefutures.cpp \
     $$PWD/Src/moex.cpp \
     $$PWD/Src/moexkline.cpp \
     $$PWD/Src/okx.cpp \

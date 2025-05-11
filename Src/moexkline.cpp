@@ -44,7 +44,7 @@ MoexKLine::MoexKLine(const TradingCatCommon::KLineID &id,
     , _engines(engines)
     , _markets(markets)
     , _boards(boards)
-    , _lastClose(lastClose.toMSecsSinceEpoch())
+    , _lastClose(lastClose.addMSecs(static_cast<quint64>(IKLine::id().type) / 2).toMSecsSinceEpoch())
 {
     Q_ASSERT(!_engines.isEmpty());
     Q_ASSERT(!_markets.isEmpty());

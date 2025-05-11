@@ -12,21 +12,37 @@
 //My
 #include <Common/parser.h>
 
-#include "mexckline.h"
+#include "mexcklinefutures.h"
 
 using namespace TradingCatCommon;
 using namespace Common;
 
-Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.mexc.com/"));
+Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://contract.mexc.com/"));
 static const quint64 MIN_REQUEST_PERION = 60 * 1000; // 5min
 static const quint64 MIN_REQUEST_PERION_429 = 10 * 60 * 1000; //10 min
 
-QString MexcKLine::KLineTypeToString(TradingCatCommon::KLineType type)
+QString MexcKLineFutures::KLineTypeToString(TradingCatCommon::KLineType type)
 {
-    return TradingCatCommon::KLineTypeToString(type);
+    // Min1、Min5、Min15、Min30、Min60、Hour4、Hour8、Day1、Week1、Month1
+    switch (type)
+    {
+    case KLineType::MIN1: return "Min1";
+    case KLineType::MIN5: return "Min5";
+    case KLineType::MIN15: return "Min15";
+    case KLineType::MIN30: return "Min30";
+    case KLineType::MIN60: return "Min60";
+    case KLineType::HOUR4: return "Hour4";
+    case KLineType::HOUR8: return "Hour8";
+    case KLineType::DAY1: return "Day1";
+    case KLineType::WEEK1: return "Month1";
+    default:
+        Q_ASSERT(false);
+    }
+
+    return "UNKNOW";
 }
 
-MexcKLine::MexcKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, const QString& secretKey /* =QString() */, QObject *parent /* = nullptr */)
+MexcKLineFutures::MexcKLineFutures(const TradingCatCommon::KLineID &id, const QDateTime& lastClose, const QString& secretKey /* =QString() */, QObject *parent /* = nullptr */)
     : IKLine(id, parent)
     , _lastClose(lastClose.addMSecs(static_cast<quint64>(IKLine::id().type) / 2).toMSecsSinceEpoch())
     , _secretKey(secretKey)
@@ -35,7 +51,7 @@ MexcKLine::MexcKLine(const TradingCatCommon::KLineID &id, const QDateTime& lastC
     Q_ASSERT(id.type == KLineType::MIN1 || id.type == KLineType::MIN5);
 }
 
-void MexcKLine::sendGetKline()
+void MexcKLineFutures::sendGetKline()
 {
     Q_ASSERT(_currentRequestId == 0);
     Q_ASSERT(_isStarted);
@@ -43,15 +59,14 @@ void MexcKLine::sendGetKline()
     //Запрашиваем немного больше свечей чтобы компенсировать разницу часов между сервером и биржей
     //лишнии свечи отбросим при парсинге
     quint32 count = ((QDateTime::currentDateTime().toMSecsSinceEpoch() - _lastClose) / static_cast<quint64>(IKLine::id().type)) + 10;
-    if (count > 999)
+    if (count > 2000)
     {
-        count = 999;
+        count = 2000;
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", IKLine::id().symbol);
     urlQuery.addQueryItem("interval", KLineTypeToString(id().type));
-    urlQuery.addQueryItem("limit", QString::number(count));
+    urlQuery.addQueryItem("start", QString::number((_lastClose - static_cast<quint64>(IKLine::id().type) * 10) / 1000));
 
     if (!_secretKey.isEmpty())
     {
@@ -68,34 +83,51 @@ void MexcKLine::sendGetKline()
     }
 
     QUrl url(*BASE_URL);
-    url.setPath("/api/v3/klines");
+    url.setPath(QString("/api/v1/contract/kline/%1").arg(id().symbol));
     url.setQuery(urlQuery);
 
     auto http = getHTTP();
     _currentRequestId = http->send(url, Common::HTTPSSLQuery::RequestType::GET);
 }
 
-PKLinesList MexcKLine::parseKLine(const QByteArray &answer)
+PKLinesList MexcKLineFutures::parseKLine(const QByteArray &answer)
 {
     PKLinesList result = std::make_shared<KLinesList>();
 
     try
     {
-        const auto arrayJson = JSONParseToArray(answer);
+        const auto answerJson = JSONParseToMap(answer);
 
-        if (arrayJson.size() < 2)
+        const auto success = JSONReadMapBool(answerJson, "success", "Root/success").value_or(true);
+        if (!success)
+        {
+            const auto message =JSONReadMapString(answerJson, "message", "Root/message").value_or("");
+            const auto code = JSONReadMapNumber<qint64>(answerJson, "code", "Root/code").value_or(0);
+
+            throw ParseException(QString("Error processing request by server. Code: %1 Message: %2").arg(code).arg(message));
+        }
+
+        const auto dataJson = JSONReadMapToMap(answerJson, "data", "Root/data");
+
+        const auto timeArrayJson = JSONReadMapToArray(dataJson, "time", "Root/data/time");
+        const auto openArrayJson = JSONReadMapToArray(dataJson, "open", "Root/data/open");
+        const auto closeArrayJson = JSONReadMapToArray(dataJson, "close", "Root/data/close");
+        const auto highArrayJson = JSONReadMapToArray(dataJson, "high", "Root/data/high");
+        const auto lowArrayJson = JSONReadMapToArray(dataJson, "low", "Root/data/low");
+        const auto volArrayJson = JSONReadMapToArray(dataJson, "vol", "Root/data/vol");
+        const auto amountArrayJson = JSONReadMapToArray(dataJson, "amount", "Root/data/amont");
+
+        if (timeArrayJson.size() < 2)
+
         {
             return result;
         }
 
         //Последняя свеча может быть некорректно сформирована, поэтму в следующий раз нам надо получить ее еще раз
-        const auto it_klinePreEnd = std::prev(arrayJson.end());
-        for (auto it_kline = arrayJson.begin(); it_kline != it_klinePreEnd; ++it_kline)
+        qsizetype count = timeArrayJson.count() - 1;
+        for (qsizetype i = 0; i < count; ++i)
         {
-            // Start time of the candle cycle, opening price, closing price, highest price, Lowest price, Transaction amount, Transaction volume
-            const auto data = JSONReadArray(*it_kline, "Root/data/[]");
-
-            const auto openDateTime = data[0].toInteger();
+            const auto openDateTime = timeArrayJson[i].toInteger() * 1000;
             const auto closeDateTime = openDateTime + static_cast<qint64>(IKLine::id().type);
 
             //отсеиваем лишнии свечи
@@ -106,13 +138,13 @@ PKLinesList MexcKLine::parseKLine(const QByteArray &answer)
 
             auto tmp = std::make_shared<KLine>();
             tmp->openTime = openDateTime;
-            tmp->open = data[1].toString().toFloat();
-            tmp->high = data[2].toString().toFloat();
-            tmp->low = data[3].toString().toFloat();
-            tmp->close = data[4].toString().toFloat();
-            tmp->volume = data[5].toString().toFloat();
+            tmp->open = openArrayJson[i].toDouble();
+            tmp->high = highArrayJson[i].toDouble();
+            tmp->low = lowArrayJson[i].toDouble();
+            tmp->close = closeArrayJson[i].toDouble();
+            tmp->volume = volArrayJson[i].toDouble();
             tmp->closeTime = closeDateTime;
-            tmp->quoteAssetVolume = data[7].toString().toFloat();
+            tmp->quoteAssetVolume = amountArrayJson[i].toDouble();
             tmp->id = IKLine::id();
 
             result->emplace_back(std::move(tmp));
@@ -133,7 +165,7 @@ PKLinesList MexcKLine::parseKLine(const QByteArray &answer)
     return result;
 }
 
-void MexcKLine::getAnswerHTTP(const QByteArray &answer, quint64 id)
+void MexcKLineFutures::getAnswerHTTP(const QByteArray &answer, quint64 id)
 {
     if (id != _currentRequestId)
     {
@@ -149,7 +181,7 @@ void MexcKLine::getAnswerHTTP(const QByteArray &answer, quint64 id)
     QTimer::singleShot(type * 3, this, [this](){ this->sendGetKline(); });
 }
 
-void MexcKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void MexcKLineFutures::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
 {
     Q_UNUSED(code);
 
@@ -175,7 +207,7 @@ void MexcKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serv
                        [this](){ this->sendGetKline(); });
 }
 
-void MexcKLine::start()
+void MexcKLineFutures::start()
 {
     auto http = getHTTP();
 
@@ -193,7 +225,7 @@ void MexcKLine::start()
     sendGetKline();
 }
 
-void MexcKLine::stop()
+void MexcKLineFutures::stop()
 {
     if (!_isStarted)
     {
@@ -203,7 +235,7 @@ void MexcKLine::stop()
     _isStarted = false;
 }
 
-void MexcKLine::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
+void MexcKLineFutures::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
 {
     Q_UNUSED(id);
 

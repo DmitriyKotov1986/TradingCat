@@ -129,6 +129,7 @@ QString UsersCore::config(const TradingCatCommon::ConfigQuery &query)
     auto& sessionData = it_onlineUsers->second;
     const auto& userName = sessionData.user;
     sessionData.lastData = QDateTime::currentDateTime();
+    sessionData.klinesDetectedList.clear();
 
     Q_ASSERT(!userName.isEmpty());
 
