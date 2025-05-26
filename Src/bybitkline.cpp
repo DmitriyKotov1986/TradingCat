@@ -161,7 +161,7 @@ void BybitKLine::getAnswerHTTP(const QByteArray &answer, quint64 id)
     QTimer::singleShot(type * 2, this, [this](){ this->sendGetKline(); });
 }
 
-void BybitKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void BybitKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id, const QByteArray& answer)
 {
     Q_UNUSED(code);
 
@@ -195,8 +195,8 @@ void BybitKLine::start()
 
     QObject::connect(http, SIGNAL(getAnswer(const QByteArray&, quint64)),
                      SLOT(getAnswerHTTP(const QByteArray&, quint64)));
-    QObject::connect(http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64)),
-                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64)));
+    QObject::connect(http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)),
+                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)));
     QObject::connect(http, SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&, quint64)),
                      SLOT(sendLogMsgHTTP(Common::TDBLoger::MSG_CODE, const QString&, quint64)));
 

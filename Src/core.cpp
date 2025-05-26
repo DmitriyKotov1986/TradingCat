@@ -48,7 +48,6 @@ void Core::start()
     Q_CHECK_PTR(_loger);
     Q_CHECK_PTR(_cnf);
 
-
     //Data thread
     {
         TradingCatCommon::StockExchangesIDList stockExchangeIdList;
@@ -65,6 +64,12 @@ void Core::start()
         connect(_dataThread->thread.get(), SIGNAL(started()), _dataThread->data.get(), SLOT(start()), Qt::DirectConnection);
         connect(_dataThread->data.get(), SIGNAL(finished()), _dataThread->thread.get(), SLOT(quit()), Qt::DirectConnection);
         connect(this, SIGNAL(stopAll()), _dataThread->data.get(), SLOT(stop()), Qt::QueuedConnection);
+        connect(_dataThread->data.get(), SIGNAL(started()), SLOT(startedTradingData()), Qt::QueuedConnection);
+
+        // connect(_dataThread->data.get(), SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
+        //         SLOT(errorOccurredTradingData(Common::EXIT_CODE, const QString&)), Qt::QueuedConnection);
+        // connect(_dataThread->data.get(), SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
+        //         SLOT(sendLogMsgTradingData(Common::TDBLoger::MSG_CODE, const QString&)), Qt::QueuedConnection);
     }
 
     //UsersCore
@@ -144,7 +149,9 @@ void Core::start()
 
             // get new data
             connect(tmp->stockExchange.get(), SIGNAL(getKLines(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesList&)),
-                    _dataThread->data.get(), SLOT(addKLines(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesList&)), Qt::QueuedConnection);
+                    _dataThread->data.get(), SLOT(addKLines(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesList&)), Qt::QueuedConnection);      
+            connect(tmp->stockExchange.get(), SIGNAL(getKLinesID(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesIDList&)),
+                    _dataThread->data.get(), SLOT(getKLinesID(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesIDList&)), Qt::QueuedConnection);
             connect(tmp->stockExchange.get(), SIGNAL(getKLines(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesList&)),
                     _detectorThread->detector.get(), SLOT(addKLines(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesList&)), Qt::QueuedConnection);
 
@@ -163,7 +170,7 @@ void Core::start()
         connect(_appServerThread->thread.get(), SIGNAL(started()), _appServerThread->appServer.get(), SLOT(start()), Qt::DirectConnection);
         connect(_appServerThread->appServer.get(), SIGNAL(finished()), _appServerThread->thread.get(), SLOT(quit()), Qt::DirectConnection);
         connect(this, SIGNAL(stopAll()), _appServerThread->appServer.get(), SLOT(stop()), Qt::QueuedConnection);
-        connect(_usersCoreThread->thread.get(), SIGNAL(started()), _appServerThread->thread.get(), SLOT(start()), Qt::QueuedConnection); //start afret UsersCoreThread
+        connect(_dataThread->data.get(), SIGNAL(started()), _appServerThread->thread.get(), SLOT(start()), Qt::QueuedConnection); //start afret get all klines ID
 
         connect(_appServerThread->appServer.get(), SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
                 SLOT(errorOccurredAppServer(Common::EXIT_CODE, const QString&)), Qt::QueuedConnection);
@@ -252,6 +259,11 @@ void Core::errorOccurredTradingData(Common::EXIT_CODE errorCode, const QString &
 void Core::sendLogMsgTradingData(Common::TDBLoger::MSG_CODE category, const QString &msg)
 {
     _loger->sendLogMsg(category, QString("TradingData: %1").arg(msg));
+}
+
+void Core::startedTradingData()
+{
+    _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Get all klines ID from stock exchanges"));
 }
 
 void Core::errorOccurredUsersCore(Common::EXIT_CODE errorCode, const QString &errorString)

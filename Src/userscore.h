@@ -36,6 +36,7 @@ public:
     QString logout(const TradingCatCommon::LogoutQuery& query);
     QString config(const TradingCatCommon::ConfigQuery& query);
     QString stockExchange(const TradingCatCommon::StockExchangesQuery& query);
+    QString klinesIdList(const TradingCatCommon::KLinesIDListQuery& query);
     QString detect(const TradingCatCommon::DetectQuery& query);
 
     bool isOnline(int sessionId) const;

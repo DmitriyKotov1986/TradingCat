@@ -185,6 +185,30 @@ QString AppServer::stockExchangesData(const QHttpServerRequest &request)
     return _usersCore.stockExchange(queryData);
 }
 
+QString AppServer::klinesIdList(const QHttpServerRequest &request)
+{
+    const auto query = request.query();
+
+    KLinesIDListQuery queryData(query);
+
+    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request KLinesIDList from %2:%3")
+                                                              .arg(queryData.id())
+                                                              .arg(request.remoteAddress().toString())
+                                                              .arg(request.remotePort()));
+
+    if (queryData.isError())
+    {
+        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
+                            .arg(queryData.id())
+                            .arg(queryData.errorString())
+                            .arg(request.url().toString()));
+
+        return Package(StatusAnswer::ErrorCode::BAD_REQUEST, queryData.errorString()).toJson();
+    }
+
+    return _usersCore.klinesIdList(queryData);
+}
+
 QString AppServer::serverStatus(const QHttpServerRequest &request)
 {
     ServerStatusQuery queryData(request.query());
@@ -272,6 +296,18 @@ bool AppServer::makeServer()
                                return QString();
                            });
 
+        _httpServer->route(KLinesIDListQuery().path(), QHttpServerRequest::Method::Get,
+                           [this](const QHttpServerRequest &request)
+                           {
+                               return klinesIdList(request);
+                           });
+
+        _httpServer->route(KLinesIDListQuery().path(), QHttpServerRequest::Method::Options,
+                           []()
+                           {
+                               return QString();
+                           });
+
         _httpServer->route(ServerStatusQuery().path(), QHttpServerRequest::Method::Get,
                            [this](const QHttpServerRequest &request)
                            {
@@ -308,7 +344,7 @@ bool AppServer::makeServer()
                 auto h = resp.headers();
                 h.append(QHttpHeaders::WellKnownHeader::Server, _serverConfig.name);
                 h.append(QHttpHeaders::WellKnownHeader::ContentType, "application/json");
-#ifndef QT_NO_DEBUG
+#ifdef QT_DEBUG
                 h.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(resp.data().size()));
                 h.append(QHttpHeaders::WellKnownHeader::AccessControlAllowOrigin, "*");
                 h.append(QHttpHeaders::WellKnownHeader::AccessControlAllowHeaders, "*");

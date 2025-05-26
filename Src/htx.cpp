@@ -21,6 +21,9 @@ using namespace TradingCatCommon;
 //static
 Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api-aws.huobi.pro/"));
 
+constexpr const qint64 UPDATE_KLINES_INTERAL = 60 * 10000;
+constexpr const qint64 RESTART_KLINES_INTERAL = 60 * 1000;
+
 const StockExchangeID Htx::STOCK_ID("HTX");
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,8 +51,8 @@ void Htx::start()
 
     QObject::connect(_http, SIGNAL(getAnswer(const QByteArray&, quint64)),
                      SLOT(getAnswerHTTP(const QByteArray&, quint64)));
-    QObject::connect(_http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64)),
-                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64)));
+    QObject::connect(_http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)),
+                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)));
     QObject::connect(_http, SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&, quint64)),
                      SLOT(sendLogMsgHTTP(Common::TDBLoger::MSG_CODE, const QString&, quint64)));
 
@@ -105,7 +108,7 @@ void Htx::getAnswerHTTP(const QByteArray &answer, quint64 id)
     parseMoney(answer);
 }
 
-void Htx::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void Htx::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id, const QByteArray& answer)
 {
     Q_UNUSED(code);
     Q_UNUSED(serverCode);
@@ -177,15 +180,19 @@ void Htx::sendUpdateMoney()
 
 void Htx::restartUpdateMoney()
 {
-    QTimer::singleShot(60 * 1000, this, [this](){ if (_isStarted) this->sendUpdateMoney(); });
+    QTimer::singleShot(RESTART_KLINES_INTERAL, this, [this](){ if (_isStarted) this->sendUpdateMoney(); });
 
     emit sendLogMsg(STOCK_ID, TDBLoger::MSG_CODE::WARNING_CODE, QString("The search for the list of KLines failed with an error. Retry after 60 s"));
 }
 
 void Htx::parseMoney(const QByteArray &answer)
 {
+    auto money = std::make_shared<TradingCatCommon::KLinesIDList>(); ///< Список доступных свечей
+
     try
     {
+        std::list<QString> symbols; ///< Список доступных инструментов
+
         const auto rootJson = JSONParseToMap(answer);
         const auto dataJson = JSONReadMapToArray(rootJson, "data", "Root/data");
         for (const auto& symbolDataValueJson: dataJson)
@@ -228,15 +235,15 @@ void Htx::parseMoney(const QByteArray &answer)
                 {
                     continue;
                 }
-                _symbols.emplace_back(std::move(moneyNameStr));
+                symbols.emplace_back(std::move(moneyNameStr));
             }
         }
 
-        for (const auto& symbol: _symbols)
+        for (const auto& symbol: symbols)
         {
             for (const auto& type: _config.klineTypes)
             {
-                _money.emplace_back(KLineID(symbol, type));
+                money->emplace(KLineID(symbol, type));
             }
         }
     }
@@ -251,10 +258,14 @@ void Htx::parseMoney(const QByteArray &answer)
 
     emit sendLogMsg(STOCK_ID, TDBLoger::MSG_CODE::INFORMATION_CODE, QString("The earch for the list of money list complite successfully"));
 
-    makeKLines();
+    makeKLines(money);
+
+    emit getKLinesID(STOCK_ID, money);
+
+    QTimer::singleShot(UPDATE_KLINES_INTERAL, this, [this](){ if (_isStarted) sendUpdateMoney(); });
 }
 
-void Htx::makeKLines()
+void Htx::makeKLines(const TradingCatCommon::PKLinesIDList klinesIdList)
 {
     quint32 addKLineCount = 0;
     quint32 eraseKLineCount = 0;
@@ -278,7 +289,7 @@ void Htx::makeKLines()
     }
 */
 
-    for (const auto& klineId: _money)
+    for (const auto& klineId: *klinesIdList)
     {
         if (!_pool->isExitsKLine(klineId))
         {
@@ -291,8 +302,8 @@ void Htx::makeKLines()
     }
     for (const auto& klineId: _pool->addedKLines())
     {
-        const auto it_money = std::find(_money.begin(), _money.end(), klineId);
-        if (it_money == _money.end())
+        const auto it_money = std::find(klinesIdList->begin(), klinesIdList->end(), klineId);
+        if (it_money == klinesIdList->end())
         {
             _pool->deleteKLine(klineId);
             ++eraseKLineCount;

@@ -79,7 +79,19 @@ PKLinesList BinanceKLine::parseKLine(const QByteArray &answer)
     PKLinesList result = std::make_shared<KLinesList>();
     try
     {
-        const auto rootJson = JSONParseToArray(answer);
+        const auto rootDocJson = JSONParseToDocument(answer);
+
+        if (rootDocJson.isObject())
+        {
+            const auto rootJson = JSONReadDocumentToMap(rootDocJson);
+
+            const auto code = JSONReadMapNumber<qint64>(rootJson, "code", "Root/code").value_or(0);
+            const auto msg = JSONReadMapString(rootJson, "msg", "Root/msg").value_or("");
+
+            throw ParseException(QString("Stock exchange return error. Code: %1 Message: %2").arg(code).arg(msg));
+        }
+
+        const auto rootJson = JSONReadDocumentToArray(rootDocJson);
 
         if (rootJson.size() < 2)
         {
@@ -146,7 +158,7 @@ void BinanceKLine::getAnswerHTTP(const QByteArray &answer, quint64 id)
     QTimer::singleShot(type * 2, this, [this](){ this->sendGetKline(); });
 }
 
-void BinanceKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void BinanceKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id, const QByteArray& answer)
 {
     Q_UNUSED(code);
 
@@ -157,7 +169,28 @@ void BinanceKLine::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 s
 
     _currentRequestId = 0;
 
-    emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("KLine %1: Error get data from HTTP server: %2").arg(IKLine::id().toString()).arg(msg));
+    QString errorMsg = "EMPTY";
+    if (!answer.isEmpty())
+    {
+        try
+        {
+            const auto rootJson = JSONParseToMap(answer);
+
+            if (rootJson.contains("code"))
+            {
+                const auto code = JSONReadMapNumber<qint64>(rootJson, "code", "Root/code").value_or(0);
+                const auto msg = JSONReadMapString(rootJson, "msg", "Root/msg").value_or("");
+
+                errorMsg = QString("Stock exchange return error. Code: %1 Message: %2").arg(code).arg(msg);
+            }
+        }
+        catch (const ParseException& err)
+        {
+            emit sendLogMsg(IKLine::id(), TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parse JSON error data: %1. Source data: %2").arg(err.what()).arg(answer));
+        }
+    }
+
+    emit sendLogMsg(IKLine::id(), Common::TDBLoger::MSG_CODE::WARNING_CODE, QString("HTTP request %1 failed with an error: %2. Addition data: %3. Retry after %4s").arg(id).arg(msg).arg(errorMsg).arg(MIN_REQUEST_PERION_429 / 1000));
 
     //429 To many request
     if (serverCode >= 400 || serverCode == 418 || code == QNetworkReply::OperationCanceledError)
@@ -180,8 +213,8 @@ void BinanceKLine::start()
 
     QObject::connect(http, SIGNAL(getAnswer(const QByteArray&, quint64)),
                      SLOT(getAnswerHTTP(const QByteArray&, quint64)));
-    QObject::connect(http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64)),
-                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64)));
+    QObject::connect(http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)),
+                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)));
     QObject::connect(http, SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&, quint64)),
                      SLOT(sendLogMsgHTTP(Common::TDBLoger::MSG_CODE, const QString&, quint64)));
 

@@ -70,6 +70,7 @@ private:
     QString configUser(const QHttpServerRequest &request);
     QString detectData(const QHttpServerRequest &request);
     QString stockExchangesData(const QHttpServerRequest &request);
+    QString klinesIdList(const QHttpServerRequest &request);
     QString serverStatus(const QHttpServerRequest &request);
 
 private:

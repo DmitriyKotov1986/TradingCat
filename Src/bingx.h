@@ -29,7 +29,7 @@ public:
 
 private slots:
     void getAnswerHTTP(const QByteArray& answer, quint64 id);
-    void errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString& msg, quint64 id);
+    void errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString& msg, quint64 id, const QByteArray& answer);
     void sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString& msg, quint64 id);
 
     void getKLinesPool(const TradingCatCommon::PKLinesList& klines);
@@ -43,7 +43,7 @@ private:
     void restartUpdateMoney();
     void parseMoney(const QByteArray &answer);
 
-    void makeKLines();
+    void makeKLines(const TradingCatCommon::PKLinesIDList klinesIdList);
 
 private:
     Common::HTTPSSLQuery::Headers _headers;
@@ -54,9 +54,6 @@ private:
     TradingCatCommon::KLineHTTPPool* _pool = nullptr;
 
     quint64 _currentRequestId = 0;
-
-    std::list<TradingCatCommon::KLineID> _money; ///< Список доступных инструментов
-    std::list<QString> _symbols; ///< Список доступных инструментов
 
     bool _isStarted = false;
 };

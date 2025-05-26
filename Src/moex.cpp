@@ -48,8 +48,8 @@ void Moex::start()
 
     QObject::connect(_http, SIGNAL(getAnswer(const QByteArray&, quint64)),
                      SLOT(getAnswerHTTP(const QByteArray&, quint64)));
-    QObject::connect(_http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64)),
-                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64)));
+    QObject::connect(_http, SIGNAL(errorOccurred(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)),
+                     SLOT(errorOccurredHTTP(QNetworkReply::NetworkError, quint64, const QString&, quint64, const QByteArray&)));
     QObject::connect(_http, SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&, quint64)),
                      SLOT(sendLogMsgHTTP(Common::TDBLoger::MSG_CODE, const QString&, quint64)));
 
@@ -128,7 +128,7 @@ void Moex::getAnswerHTTP(const QByteArray &answer, quint64 id)
     _requests.erase(id);
 }
 
-void Moex::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id)
+void Moex::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id, const QByteArray& answer)
 {
     Q_UNUSED(code);
     Q_UNUSED(serverCode);

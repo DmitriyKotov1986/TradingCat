@@ -48,6 +48,7 @@ private slots:
 
     void errorOccurredTradingData(Common::EXIT_CODE errorCode, const QString& errorString);
     void sendLogMsgTradingData(Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void startedTradingData();
 
     void errorOccurredUsersCore(Common::EXIT_CODE errorCode, const QString& errorString);
     void sendLogMsgUsersCore(Common::TDBLoger::MSG_CODE category, const QString& msg);

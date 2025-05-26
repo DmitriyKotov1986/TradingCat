@@ -160,12 +160,14 @@ QString UsersCore::detect(const TradingCatCommon::DetectQuery &query)
     }
 
     auto& sessionData = it_onlineUsers->second;
+    sessionData.lastData = QDateTime::currentDateTime();
     auto& klinesDetectedList = sessionData.klinesDetectedList;
 
     const auto result = Package(DetectAnswer(klinesDetectedList, *OK_ANSWER_TEXT)).toJson();
 
     klinesDetectedList.clear();
-    sessionData.lastData = QDateTime::currentDateTime();
+
+    onlineLocker.unlock();
 
     emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Send detect data. SessionID: %2").arg(query.id()).arg(sessionId));
 
@@ -199,6 +201,26 @@ QString UsersCore::stockExchange(const TradingCatCommon::StockExchangesQuery &qu
     emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Successfully finished. Send answer").arg(query.id()));
 
     return Package(StockExchangesAnswer(_tradingData.stockExcangesIdList(), *OK_ANSWER_TEXT)).toJson();
+}
+
+QString UsersCore::klinesIdList(const TradingCatCommon::KLinesIDListQuery &query)
+{
+    const auto sessionId = query.sessionId();
+
+    QMutexLocker onlineLocker(&onlineMutex);
+
+    const auto it_onlineUsers = _onlineUsers.find(sessionId);
+    if (it_onlineUsers == _onlineUsers.end())
+    {
+        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
+
+        return Package(StatusAnswer::ErrorCode::UNAUTHORIZED).toJson();
+    }
+
+    auto& sessionData = it_onlineUsers->second;
+    sessionData.lastData = QDateTime::currentDateTime();
+
+    return Package(KLinesIDListAnswer(query.stockExchangeId(), _tradingData.getKLinesIDList(query.stockExchangeId()), *OK_ANSWER_TEXT)).toJson();
 }
 
 QStringList UsersCore::usersOnline() const
