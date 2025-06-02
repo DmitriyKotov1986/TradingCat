@@ -83,7 +83,7 @@ void MexcKLineFutures::sendGetKline()
     }
 
     QUrl url(*BASE_URL);
-    url.setPath(QString("/api/v1/contract/kline/%1").arg(id().symbol));
+    url.setPath(QString("/api/v1/contract/kline/%1").arg(id().symbol.name));
     url.setQuery(urlQuery);
 
     auto http = getHTTP();

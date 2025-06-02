@@ -63,7 +63,7 @@ void BitgetKLineFutures::sendGetKline()
 
     QUrlQuery urlQuery;
     urlQuery.addQueryItem("productType", "USDT-FUTURES");
-    urlQuery.addQueryItem("symbol", id().symbol);
+    urlQuery.addQueryItem("symbol", id().symbol.name);
     urlQuery.addQueryItem("granularity", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 

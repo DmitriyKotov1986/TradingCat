@@ -62,7 +62,7 @@ void BitgetKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", id().symbol);
+    urlQuery.addQueryItem("symbol", id().symbol.name);
     urlQuery.addQueryItem("period", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 

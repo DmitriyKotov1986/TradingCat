@@ -11,25 +11,25 @@
 #include <Common/parser.h>
 #include <TradingCatCommon/detector.h>
 
-#include "bitgetkline.h"
+#include "bitmartkline.h"
 
-#include "bitget.h"
+#include "bitmart.h"
 
 using namespace Common;
 using namespace TradingCatCommon;
 
 //static
-Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api.bitget.com/"));
+Q_GLOBAL_STATIC_WITH_ARGS(const QUrl, BASE_URL, ("https://api-cloud.bitmart.com/"));
 
 constexpr const qint64 UPDATE_KLINES_INTERAL = 60 * 10000;
 constexpr const qint64 RESTART_KLINES_INTERAL = 60 * 1000;
 
-const StockExchangeID Bitget::STOCK_ID("BITGET");
+const StockExchangeID Bitmart::STOCK_ID("BITMART");
 
 ///////////////////////////////////////////////////////////////////////////////
-/// class Bitget
+/// class Bitmart
 ///
-Bitget::Bitget(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent /* = nullptr */)
+Bitmart::Bitmart(const TradingCatCommon::StockExchangeConfig& config, const Common::HTTPSSLQuery::ProxyList& proxyList, QObject *parent /* = nullptr */)
     : IStockExchange{STOCK_ID, parent}
     , _config(config)
     , _proxyList(proxyList)
@@ -37,12 +37,12 @@ Bitget::Bitget(const TradingCatCommon::StockExchangeConfig& config, const Common
     _headers.insert(QByteArray{"Content-Type"}, QByteArray{"application/json"});
 }
 
-Bitget::~Bitget()
+Bitmart::~Bitmart()
 {
     stop();
 }
 
-void Bitget::start()
+void Bitmart::start()
 {
     Q_ASSERT(!_isStarted);
 
@@ -78,7 +78,7 @@ void Bitget::start()
     sendUpdateMoney();
 }
 
-void Bitget::stop()
+void Bitmart::stop()
 {
     if (!_isStarted)
     {
@@ -95,7 +95,7 @@ void Bitget::stop()
     emit finished();
 }
 
-void Bitget::getAnswerHTTP(const QByteArray &answer, quint64 id)
+void Bitmart::getAnswerHTTP(const QByteArray &answer, quint64 id)
 {
     if (id != _currentRequestId)
     {
@@ -107,7 +107,7 @@ void Bitget::getAnswerHTTP(const QByteArray &answer, quint64 id)
     parseMoney(answer);
 }
 
-void Bitget::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id, const QByteArray& answer)
+void Bitmart::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverCode, const QString &msg, quint64 id, const QByteArray& answer)
 {
     Q_UNUSED(code);
     Q_UNUSED(serverCode);
@@ -119,17 +119,37 @@ void Bitget::errorOccurredHTTP(QNetworkReply::NetworkError code, quint64 serverC
 
     _currentRequestId = 0;
 
+    if (!answer.isEmpty())
+    {
+        try
+        {
+        const auto rootJson = JSONParseToMap(answer);
+
+        const auto errCode = JSONReadMapNumber<qint64>(rootJson, "code", "Root/code").value_or(1000); //1000 is OK code
+        if (errCode  != 1000)
+        {
+            const auto msg = JSONReadMapString(rootJson, "message", "Root/message").value_or("");
+
+            emit sendLogMsg(STOCK_ID, Common::TDBLoger::MSG_CODE::WARNING_CODE, QString("Stock exchange return error. Code: %1 Message: %2").arg(code).arg(msg));
+        }
+        }
+        catch (const ParseException& err)
+        {
+            emit sendLogMsg(STOCK_ID, TDBLoger::MSG_CODE::WARNING_CODE, QString("Error parse JSON error data: %1. Source data: %2").arg(err.what()).arg(answer));
+        }
+    }
+
     emit sendLogMsg(STOCK_ID, Common::TDBLoger::MSG_CODE::WARNING_CODE, QString("HTTP request %1 failed with an error: %2").arg(id).arg(msg));
 
     restartUpdateMoney();
 }
 
-void Bitget::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
+void Bitmart::sendLogMsgHTTP(Common::TDBLoger::MSG_CODE category, const QString &msg, quint64 id)
 {
     emit sendLogMsg(STOCK_ID, category, QString("HTTP request %1: %2").arg(id).arg(msg));
 }
 
-void Bitget::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
+void Bitmart::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
 {
     Q_ASSERT(!klines->empty());
 
@@ -153,17 +173,17 @@ void Bitget::getKLinesPool(const TradingCatCommon::PKLinesList &klines)
     emit getKLines(STOCK_ID, klines);
 }
 
-void Bitget::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
+void Bitmart::errorOccurredPool(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     emit errorOccurred(STOCK_ID, errorCode, QString("KLines Pool error: %1").arg(errorString));
 }
 
-void Bitget::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void Bitmart::sendLogMsgPool(Common::TDBLoger::MSG_CODE category, const QString &msg)
 {
     emit sendLogMsg(STOCK_ID, category, QString("KLines Pool: %1").arg(msg));
 }
 
-void Bitget::sendUpdateMoney()
+void Bitmart::sendUpdateMoney()
 {
     Q_CHECK_PTR(_http);
 
@@ -171,19 +191,19 @@ void Bitget::sendUpdateMoney()
     Q_ASSERT(_isStarted);
 
     QUrl url(*BASE_URL);
-    url.setPath("/api/spot/v1/public/products");
+    url.setPath("/spot/v1/symbols");
 
     _currentRequestId = _http->send(url, Common::HTTPSSLQuery::RequestType::GET);
 }
 
-void Bitget::restartUpdateMoney()
+void Bitmart::restartUpdateMoney()
 {
     QTimer::singleShot(RESTART_KLINES_INTERAL, this, [this](){ if (_isStarted) this->sendUpdateMoney(); });
 
     emit sendLogMsg(STOCK_ID, TDBLoger::MSG_CODE::WARNING_CODE, QString("The search for the list of KLines failed with an error. Retry after 60 s"));
 }
 
-void Bitget::parseMoney(const QByteArray &answer)
+void Bitmart::parseMoney(const QByteArray &answer)
 {
     auto money = std::make_shared<TradingCatCommon::KLinesIDList>(); ///< Список доступных свечей
 
@@ -192,16 +212,25 @@ void Bitget::parseMoney(const QByteArray &answer)
         std::list<QString> symbols; ///< Список доступных инструментов
 
         const auto rootJson = JSONParseToMap(answer);
-        const auto dataJson = JSONReadMapToArray(rootJson, "data", "Root/data");
-        for (const auto& symbolDataValueJson: dataJson)
+
+        const auto code = JSONReadMapNumber<qint64>(rootJson, "code", "Root/code").value_or(1000); //1000 is OK code
+        if (code != 1000)
         {
-            const auto symbolDataJson = JSONReadMap(symbolDataValueJson, "Root/data/[]");
-            const auto moneyName = JSONReadMapString(symbolDataJson, "symbol", "Root/symbols/[]", false);
+            const auto msg = JSONReadMapString(rootJson, "message", "Root/message").value_or("");
+
+            throw ParseException(QString("Stock exchange return error. Code: %1 Message: %2").arg(code).arg(msg));
+        }
+
+        const auto dataJson = JSONReadMapToMap(rootJson, "data", "Root/data");
+        const auto symbolsJson = JSONReadMapToArray(dataJson, "symbols", "Root/data/symbols");
+        for (const auto& symbolNameJson: symbolsJson)
+        {
+            const auto moneyName = JSONReadString(symbolNameJson, "Root/data/symbols/[]", false);
             if (moneyName.has_value())
             {
                 const auto& moneyNameStr = moneyName.value();
 
-                if (moneyNameStr.last(9) != "USDT_SPBL")
+                if (moneyNameStr.last(4) != "USDT")
                 {
                     continue;
                 }
@@ -257,7 +286,7 @@ void Bitget::parseMoney(const QByteArray &answer)
     QTimer::singleShot(UPDATE_KLINES_INTERAL, this, [this](){ if (_isStarted) sendUpdateMoney(); });
 }
 
-void Bitget::makeKLines(const TradingCatCommon::PKLinesIDList klinesIdList)
+void Bitmart::makeKLines(const TradingCatCommon::PKLinesIDList klinesIdList)
 {
     quint32 addKLineCount = 0;
     quint32 eraseKLineCount = 0;
@@ -285,7 +314,7 @@ void Bitget::makeKLines(const TradingCatCommon::PKLinesIDList klinesIdList)
     {
         if (!_pool->isExitsKLine(klineId))
         {
-            auto kline = std::make_unique<BitgetKLine>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));
+            auto kline = std::make_unique<BitmartKLine>(klineId, QDateTime::currentDateTime().addMSecs(-static_cast<qint64>(klineId.type) * KLINES_COUNT_HISTORY));
 
             _pool->addKLine(std::move(kline));
 

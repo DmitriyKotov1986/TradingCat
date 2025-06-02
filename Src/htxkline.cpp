@@ -63,7 +63,7 @@ void HtxKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", id().symbol.toLower());
+    urlQuery.addQueryItem("symbol", id().symbol.name.toLower());
     urlQuery.addQueryItem("period", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("size", QString::number(count));
 

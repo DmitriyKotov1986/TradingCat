@@ -62,7 +62,7 @@ void KucoinKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", IKLine::id().symbol);
+    urlQuery.addQueryItem("symbol", IKLine::id().symbol.name);
     urlQuery.addQueryItem("type", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("startAt", QString::number(_lastClose / 1000));
 

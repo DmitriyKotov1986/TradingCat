@@ -163,13 +163,15 @@ QString UsersCore::detect(const TradingCatCommon::DetectQuery &query)
     sessionData.lastData = QDateTime::currentDateTime();
     auto& klinesDetectedList = sessionData.klinesDetectedList;
 
+    const auto eventsCount = klinesDetectedList.detected.size();
+
     const auto result = Package(DetectAnswer(klinesDetectedList, *OK_ANSWER_TEXT)).toJson();
 
     klinesDetectedList.clear();
 
     onlineLocker.unlock();
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Send detect data. SessionID: %2").arg(query.id()).arg(sessionId));
+    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Send detect data. Detect %2 events. SessionID: %3").arg(query.id()).arg(eventsCount).arg(sessionId));
 
     return result;
 }

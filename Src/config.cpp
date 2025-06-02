@@ -12,6 +12,7 @@
 #include "gate.h"
 #include "kucoin.h"
 #include "bybit.h"
+#include "bitmart.h"
 #include "binance.h"
 #include "bitget.h"
 #include "bingx.h"
@@ -35,6 +36,7 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
                               Kucoin::STOCK_ID.name,
                               Bybit::STOCK_ID.name,
                               Bitget::STOCK_ID.name,
+                              Bitmart::STOCK_ID.name,
                               Bingx::STOCK_ID.name,
                               Okx::STOCK_ID.name,
                               Htx::STOCK_ID.name,

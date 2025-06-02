@@ -62,7 +62,7 @@ void KucoinKLineFutures::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", IKLine::id().symbol);
+    urlQuery.addQueryItem("symbol", IKLine::id().symbol.name);
     urlQuery.addQueryItem("granularity", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("from", QString::number(_lastClose - static_cast<quint64>(IKLine::id().type) * 10));
 

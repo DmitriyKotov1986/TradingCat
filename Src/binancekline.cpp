@@ -62,7 +62,7 @@ void BinanceKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", id().symbol);
+    urlQuery.addQueryItem("symbol", id().symbol.name);
     urlQuery.addQueryItem("interval", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 

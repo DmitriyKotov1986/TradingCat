@@ -64,7 +64,7 @@ void BybitKLine::sendGetKline()
     QUrlQuery urlQuery;
     urlQuery.addQueryItem("category", "spot");
    // urlQuery.addQueryItem("category", "linear");
-    urlQuery.addQueryItem("symbol", id().symbol);
+    urlQuery.addQueryItem("symbol", id().symbol.name);
     urlQuery.addQueryItem("interval", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 

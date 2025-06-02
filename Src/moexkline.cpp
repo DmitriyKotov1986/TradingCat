@@ -68,7 +68,7 @@ void MoexKLine::sendGetKline()
                     .arg(_engines)
                     .arg(_markets)
                     .arg(_boards)
-                    .arg(id().symbol));
+                    .arg(id().symbol.name));
 
     url.setQuery(urlQuery);
 

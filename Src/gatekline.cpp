@@ -65,7 +65,7 @@ void GateKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("currency_pair", IKLine::id().symbol);
+    urlQuery.addQueryItem("currency_pair", IKLine::id().symbol.name);
     urlQuery.addQueryItem("interval", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 

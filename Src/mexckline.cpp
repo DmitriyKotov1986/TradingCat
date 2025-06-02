@@ -49,7 +49,7 @@ void MexcKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("symbol", IKLine::id().symbol);
+    urlQuery.addQueryItem("symbol", IKLine::id().symbol.name);
     urlQuery.addQueryItem("interval", KLineTypeToString(id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 

@@ -18,6 +18,8 @@ HEADERS += \
     $$PWD/Src/bingxkline.h \
     $$PWD/Src/bitget.h \
     $$PWD/Src/bitgetkline.h \
+    $$PWD/Src/bitmart.h \
+    $$PWD/Src/bitmartkline.h \
     $$PWD/Src/bitgetfutures.h \
     $$PWD/Src/bitgetklinefutures.h \
     $$PWD/Src/bybit.h \
@@ -53,6 +55,8 @@ SOURCES += \
     $$PWD/Src/binancekline.cpp \
     $$PWD/Src/bitget.cpp \
     $$PWD/Src/bitgetkline.cpp \
+    $$PWD/Src/bitmart.cpp \
+    $$PWD/Src/bitmartkline.cpp \
     $$PWD/Src/bitgetfutures.cpp \
     $$PWD/Src/bitgetklinefutures.cpp \
     $$PWD/Src/bingx.cpp \

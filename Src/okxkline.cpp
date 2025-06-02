@@ -62,7 +62,7 @@ void OkxKLine::sendGetKline()
     }
 
     QUrlQuery urlQuery;
-    urlQuery.addQueryItem("instId", id().symbol);
+    urlQuery.addQueryItem("instId", id().symbol.name);
     urlQuery.addQueryItem("bar", KLineTypeToString(IKLine::id().type));
     urlQuery.addQueryItem("limit", QString::number(count));
 //    urlQuery.addQueryItem("before", QString::number(_lastClose.toMSecsSinceEpoch()));

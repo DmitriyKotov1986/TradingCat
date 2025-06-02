@@ -448,7 +448,7 @@ void Moex::makeKLines()
     }
     for (const auto& klineId: _pool->addedKLines())
     {
-        const auto it_securities = _securities.find(klineId.symbol);
+        const auto it_securities = _securities.find(klineId.symbol.name);
         if (it_securities == _securities.end() || (it_securities != _securities.end() && it_securities->second->primary_boardid != "TQBR"))
         {
             _pool->deleteKLine(klineId);

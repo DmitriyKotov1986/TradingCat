@@ -10,6 +10,7 @@
 #include "bybit.h"
 #include "binance.h"
 #include "bitget.h"
+#include "bitmart.h"
 #include "bingx.h"
 #include "okx.h"
 #include "htx.h"
@@ -344,6 +345,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const TradingCatCommon::S
     else if (stockExchangeConfig.type == Bitget::STOCK_ID)
     {
         return std::make_unique<Bitget>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == Bitmart::STOCK_ID)
+    {
+        return std::make_unique<Bitmart>(stockExchangeConfig, _proxyList);
     }
     else if (stockExchangeConfig.type == Bingx::STOCK_ID)
     {
