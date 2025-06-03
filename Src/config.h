@@ -6,9 +6,12 @@
 
 //My
 #include <Common/sql.h>
+
 #include <TradingCatCommon/types.h>
 #include <TradingCatCommon/stockexchange.h>
 #include <TradingCatCommon/httpserver.h>
+
+#include <StockExchange/istockexchange.h>
 
 class Config final
 {
@@ -39,7 +42,7 @@ public:
     bool isError() const;
 
     //[STOCK_EXCHANGE_N]
-    const TradingCatCommon::StockExchangeConfigList& stockExchangeConfigList() const noexcept;
+    const StockExchange::StockExchangeConfigList& stockExchangeConfigList() const noexcept;
 
 private:
     const QString _configFileName;
@@ -60,7 +63,7 @@ private:
     TradingCatCommon::ProxyDataList _proxyDataList;
 
     //[STOCK_EXCHANGE_N]
-    TradingCatCommon::StockExchangeConfigList _stockExchangeConfigList;
+    StockExchange::StockExchangeConfigList _stockExchangeConfigList;
 
 };
 

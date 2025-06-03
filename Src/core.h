@@ -11,10 +11,11 @@
 #include <Common/tdbloger.h>
 #include <Common/httpsslquery.h>
 
-#include <TradingCatCommon/istockexchange.h>
 #include <TradingCatCommon/httpserver.h>
 #include <TradingCatCommon/tradingdata.h>
 #include <TradingCatCommon/detector.h>
+
+#include <StockExchange/istockexchange.h>
 
 #include "userscore.h"
 #include "appserver.h"
@@ -60,7 +61,7 @@ private slots:
     void sendLogMsgAppServer(Common::TDBLoger::MSG_CODE category, const QString& msg);
 
 private:
-    std::unique_ptr<TradingCatCommon::IStockExchange> makeStockEchange(const TradingCatCommon::StockExchangeConfig& stockExchangeConfig) const;
+    std::unique_ptr<StockExchange::IStockExchange> makeStockEchange(const StockExchange::StockExchangeConfig& stockExchangeConfig) const;
     void makeProxyList();
 
 private:
@@ -73,7 +74,7 @@ private:
 
     struct StockExchangeThread
     {
-        std::unique_ptr<TradingCatCommon::IStockExchange> stockExchange;
+        std::unique_ptr<StockExchange::IStockExchange> stockExchange;
         std::unique_ptr<QThread> thread;
     };
     using PStockExchangeThread = std::unique_ptr<StockExchangeThread>;

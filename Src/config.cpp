@@ -7,26 +7,27 @@
 //My
 #include <Common/common.h>
 
-#include "moex.h"
-#include "mexc.h"
-#include "gate.h"
-#include "kucoin.h"
-#include "bybit.h"
-#include "bitmart.h"
-#include "binance.h"
-#include "bitget.h"
-#include "bingx.h"
-#include "okx.h"
-#include "htx.h"
-#include "kucoinfutures.h"
-#include "bitgetfutures.h"
-#include "gatefutures.h"
-#include "bybitfutures.h"
-#include "mexcfutures.h"
+#include <StockExchange/moex.h>
+#include <StockExchange/mexc.h>
+#include <StockExchange/gate.h>
+#include <StockExchange/kucoin.h>
+#include <StockExchange/bybit.h>
+#include <StockExchange/binance.h>
+#include <StockExchange/bitget.h>
+#include <StockExchange/bitmart.h>
+#include <StockExchange/bingx.h>
+#include <StockExchange/okx.h>
+#include <StockExchange/htx.h>
+#include <StockExchange/kucoinfutures.h>
+#include <StockExchange/bitgetfutures.h>
+#include <StockExchange/gatefutures.h>
+#include <StockExchange/bybitfutures.h>
+#include <StockExchange/mexcfutures.h>
 
 #include "config.h"
 
 using namespace TradingCatCommon;
+using namespace StockExchange;
 using namespace Common;
 
 Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
