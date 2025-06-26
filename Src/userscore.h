@@ -49,7 +49,7 @@ signals:
         @param category - категория сообщения
         @param msg - текст сообщения
     */
-    void sendLogMsg(Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void sendLogMsg(Common::MSG_CODE category, const QString& msg);
 
     /*!
         Сигнал генерируется если в процессе работы сервера произошла фатальная ошибка
@@ -73,7 +73,7 @@ private slots:
         @param category - категория сообщения
         @param msg - текст сообщения
     */
-    void sendLogMsgUsers(Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void sendLogMsgUsers(Common::MSG_CODE category, const QString& msg);
 
     /*!
         Сигнал генерируется если в процессе работы сервера произошла фатальная ошибка

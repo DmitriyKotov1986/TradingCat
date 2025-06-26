@@ -176,7 +176,7 @@ void Users::loadUserData()
 
         if (userData.isError())
         {
-            emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Incorrect configuration user %1: %2. User skip").arg(userName).arg(userData.errorString()));
+            emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("Incorrect configuration user %1: %2. User skip").arg(userName).arg(userData.errorString()));
 
             continue;
         }
@@ -186,7 +186,7 @@ void Users::loadUserData()
 
     _db.commit();
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Users data load successfull. Total users: %1").arg(_users.size()));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("Users data load successfull. Total users: %1").arg(_users.size()));
 }
 
 void Users::saveUserData(const UserData& userData)
@@ -231,7 +231,7 @@ UserData& Users::newUser(const QString &user, const QString &password)
 
         existUserData = std::move(userData);
 
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("User data will be replace. User: %1").arg(user));
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("User data will be replace. User: %1").arg(user));
 
         return it_users->second;
     }
@@ -262,7 +262,7 @@ UserData& Users::newUser(const QString &user, const QString &password)
         return userDataInContainer;
     }
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Added user: %1").arg(user));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("Added user: %1").arg(user));
 
     return userDataInContainer;
 }

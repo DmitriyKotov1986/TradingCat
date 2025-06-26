@@ -61,7 +61,7 @@ QString UsersCore::login(const TradingCatCommon::LoginQuery &query)
     // неверный пароль
     if (user.password() != password)
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Incorrect password of user: %1. User no login").arg(query.id()).arg(userName));
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 Incorrect password of user: %1. User no login").arg(query.id()).arg(userName));
 
         return Package(StatusAnswer::ErrorCode::UNAUTHORIZED, "Incorrect password or user name").toJson();
     }
@@ -79,7 +79,7 @@ QString UsersCore::login(const TradingCatCommon::LoginQuery &query)
     _onlineUsers.emplace(sessionId, std::move(sessionData));
 
     emit userOnline(sessionId, user.config());
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Connect user: %2 SessionID: %3. User login").arg(query.id()).arg(userName).arg(sessionId));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 Connect user: %2 SessionID: %3. User login").arg(query.id()).arg(userName).arg(sessionId));
 
     return Package(LoginAnswer(sessionId, user.config(), *TradingCatCommon::OK_ANSWER_TEXT)).toJson();
 }
@@ -96,7 +96,7 @@ QString UsersCore::logout(const TradingCatCommon::LogoutQuery &query)
         const auto it_onlineUsers = _onlineUsers.find(sessionId);
         if (it_onlineUsers == _onlineUsers.end())
         {
-            emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
+            emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
 
             return Package(StatusAnswer::ErrorCode::UNAUTHORIZED).toJson();
         }
@@ -107,7 +107,7 @@ QString UsersCore::logout(const TradingCatCommon::LogoutQuery &query)
     }
 
     emit userOffline(sessionId);
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 User logout. User: %1 SessionID: %2").arg(query.id()). arg(userName).arg(sessionId));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 User logout. User: %1 SessionID: %2").arg(query.id()). arg(userName).arg(sessionId));
 
     return Package(LogoutAnswer(*OK_ANSWER_TEXT)).toJson();
 }
@@ -121,7 +121,7 @@ QString UsersCore::config(const TradingCatCommon::ConfigQuery &query)
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
 
         return Package(StatusAnswer::ErrorCode::UNAUTHORIZED).toJson();
     }
@@ -140,7 +140,7 @@ QString UsersCore::config(const TradingCatCommon::ConfigQuery &query)
     user.setConfig(query.config());
 
     emit userOnline(sessionId, user.config());
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 User update config successfully. User: %2 SessionID: %3").arg(query.id()).arg(userName).arg(sessionId));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 User update config successfully. User: %2 SessionID: %3").arg(query.id()).arg(userName).arg(sessionId));
 
     return Package(ConfigAnswer(*OK_ANSWER_TEXT)).toJson();
 }
@@ -154,7 +154,7 @@ QString UsersCore::detect(const TradingCatCommon::DetectQuery &query)
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
 
         return Package(StatusAnswer::ErrorCode::UNAUTHORIZED).toJson();
     }
@@ -171,7 +171,7 @@ QString UsersCore::detect(const TradingCatCommon::DetectQuery &query)
 
     onlineLocker.unlock();
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Send detect data. Detect %2 events. SessionID: %3").arg(query.id()).arg(eventsCount).arg(sessionId));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 Send detect data. Detect %2 events. SessionID: %3").arg(query.id()).arg(eventsCount).arg(sessionId));
 
     return result;
 }
@@ -192,7 +192,7 @@ QString UsersCore::stockExchange(const TradingCatCommon::StockExchangesQuery &qu
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
 
         return Package(StatusAnswer::ErrorCode::UNAUTHORIZED).toJson();
     }
@@ -200,7 +200,7 @@ QString UsersCore::stockExchange(const TradingCatCommon::StockExchangesQuery &qu
     auto& sessionData = it_onlineUsers->second;
     sessionData.lastData = QDateTime::currentDateTime();
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Successfully finished. Send answer").arg(query.id()));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 Successfully finished. Send answer").arg(query.id()));
 
     return Package(StockExchangesAnswer(_tradingData.stockExcangesIdList(), *OK_ANSWER_TEXT)).toJson();
 }
@@ -214,7 +214,7 @@ QString UsersCore::klinesIdList(const TradingCatCommon::KLinesIDListQuery &query
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 User not login. SessionID: %2. Skip").arg(query.id()).arg(sessionId));
 
         return Package(StatusAnswer::ErrorCode::UNAUTHORIZED).toJson();
     }
@@ -246,8 +246,8 @@ void UsersCore::start()
     _users = new Users(_dbConnectionInfo, this);
 
     //Users
-    connect(_users, SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
-            SLOT(sendLogMsgUsers(Common::TDBLoger::MSG_CODE, const QString&)));
+    connect(_users, SIGNAL(sendLogMsg(Common::MSG_CODE, const QString&)),
+            SLOT(sendLogMsgUsers(Common::MSG_CODE, const QString&)));
     connect(_users, SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
             SLOT(errorOccurredUsers(Common::EXIT_CODE, const QString&)));
 
@@ -285,7 +285,7 @@ void UsersCore::stop()
 }
 
 
-void UsersCore::sendLogMsgUsers(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void UsersCore::sendLogMsgUsers(Common::MSG_CODE category, const QString &msg)
 {
     emit sendLogMsg(category, QString("Users data: %1").arg(msg));
 }
@@ -316,7 +316,7 @@ void UsersCore::connectionTimeout()
         if (sessionData.lastData.msecsTo(QDateTime::currentDateTime()) > CONNECTION_TIMEOUT)
         {
             emit userOffline(it_onlineUser->first);
-            emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE,
+            emit sendLogMsg(MSG_CODE::WARNING_CODE,
                             QString("Connection timeout. SessionID: %1").arg(it_onlineUser->first));
 
             it_onlineUser = _onlineUsers.erase(it_onlineUser);      

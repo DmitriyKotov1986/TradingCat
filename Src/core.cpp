@@ -19,6 +19,7 @@
 #include <StockExchange/gatefutures.h>
 #include <StockExchange/bybitfutures.h>
 #include <StockExchange/mexcfutures.h>
+#include <StockExchange/bingxfutures.h>
 
 #include "core.h"
 
@@ -70,8 +71,8 @@ void Core::start()
 
         // connect(_dataThread->data.get(), SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
         //         SLOT(errorOccurredTradingData(Common::EXIT_CODE, const QString&)), Qt::QueuedConnection);
-        // connect(_dataThread->data.get(), SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
-        //         SLOT(sendLogMsgTradingData(Common::TDBLoger::MSG_CODE, const QString&)), Qt::QueuedConnection);
+        // connect(_dataThread->data.get(), SIGNAL(sendLogMsg(Common::MSG_CODE, const QString&)),
+        //         SLOT(sendLogMsgTradingData(Common::MSG_CODE, const QString&)), Qt::QueuedConnection);
     }
 
     //UsersCore
@@ -88,8 +89,8 @@ void Core::start()
 
         connect(_usersCoreThread->usersCore.get(), SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
                 SLOT(errorOccurredUsersCore(Common::EXIT_CODE, const QString&)), Qt::QueuedConnection);
-        connect(_usersCoreThread->usersCore.get(), SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
-                SLOT(sendLogMsgUsersCore(Common::TDBLoger::MSG_CODE, const QString&)), Qt::QueuedConnection);
+        connect(_usersCoreThread->usersCore.get(), SIGNAL(sendLogMsg(Common::MSG_CODE, const QString&)),
+                SLOT(sendLogMsgUsersCore(Common::MSG_CODE, const QString&)), Qt::QueuedConnection);
 
     }
 
@@ -107,8 +108,8 @@ void Core::start()
 
         connect(_detectorThread->detector.get(), SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
                 SLOT(errorOccurredDetector(Common::EXIT_CODE, const QString&)), Qt::QueuedConnection);
-        connect(_detectorThread->detector.get(), SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
-                SLOT(sendLogMsgDetector(Common::TDBLoger::MSG_CODE, const QString&)), Qt::QueuedConnection);
+        connect(_detectorThread->detector.get(), SIGNAL(sendLogMsg(Common::MSG_CODE, const QString&)),
+                SLOT(sendLogMsgDetector(Common::MSG_CODE, const QString&)), Qt::QueuedConnection);
 
         connect(_usersCoreThread->usersCore.get(), SIGNAL(userOnline(qint64, const TradingCatCommon::UserConfig&)),
                 _detectorThread->detector.get(), SLOT(userOnline(qint64, const TradingCatCommon::UserConfig&)));
@@ -146,8 +147,8 @@ void Core::start()
 
             connect(tmp->stockExchange.get(), SIGNAL(errorOccurred(const TradingCatCommon::StockExchangeID&, Common::EXIT_CODE, const QString&)),
                     SLOT(errorOccurredStockExchange(const TradingCatCommon::StockExchangeID&, Common::EXIT_CODE, const QString&)), Qt::QueuedConnection);
-            connect(tmp->stockExchange.get(), SIGNAL(sendLogMsg(const TradingCatCommon::StockExchangeID&, Common::TDBLoger::MSG_CODE, const QString&)),
-                    SLOT(sendLogMsgStockExchange(const TradingCatCommon::StockExchangeID&, Common::TDBLoger::MSG_CODE, const QString&)), Qt::QueuedConnection);
+            connect(tmp->stockExchange.get(), SIGNAL(sendLogMsg(const TradingCatCommon::StockExchangeID&, Common::MSG_CODE, const QString&)),
+                    SLOT(sendLogMsgStockExchange(const TradingCatCommon::StockExchangeID&, Common::MSG_CODE, const QString&)), Qt::QueuedConnection);
 
             // get new data
             connect(tmp->stockExchange.get(), SIGNAL(getKLines(const TradingCatCommon::StockExchangeID&, const TradingCatCommon::PKLinesList&)),
@@ -176,15 +177,15 @@ void Core::start()
 
         connect(_appServerThread->appServer.get(), SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
                 SLOT(errorOccurredAppServer(Common::EXIT_CODE, const QString&)), Qt::QueuedConnection);
-        connect(_appServerThread->appServer.get(), SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
-                SLOT(sendLogMsgAppServer(Common::TDBLoger::MSG_CODE, const QString&)), Qt::QueuedConnection);
+        connect(_appServerThread->appServer.get(), SIGNAL(sendLogMsg(Common::MSG_CODE, const QString&)),
+                SLOT(sendLogMsgAppServer(Common::MSG_CODE, const QString&)), Qt::QueuedConnection);
     }
 
     _isStarted = true;
 
     _dataThread->thread->start();
 
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, "Started successfully");
+    _loger->sendLogMsg(MSG_CODE::INFORMATION_CODE, "Started successfully");
 
 //    QTimer::singleShot(60000, this, [this](){ this->stop(); } );
 }
@@ -217,7 +218,7 @@ void Core::stop()
 
     _isStarted = false;
 
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, "Stoped successfully");
+    _loger->sendLogMsg(MSG_CODE::INFORMATION_CODE, "Stoped successfully");
 
     emit finished();
 }
@@ -235,14 +236,14 @@ void Core::errorOccurredStockExchange(const TradingCatCommon::StockExchangeID &i
 {
     const auto msg = QString("Critical error while the Stock Exchange %1 is running. Code: %2 Message: %3").arg(id.toString()).arg(errorCode).arg(errorString);
 
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::CRITICAL_CODE, msg);
+    _loger->sendLogMsg(MSG_CODE::CRITICAL_CODE, msg);
 
     qCritical() << msg;
 
     QCoreApplication::exit(errorCode);
 }
 
-void Core::sendLogMsgStockExchange(const TradingCatCommon::StockExchangeID &id, Common::TDBLoger::MSG_CODE category, const QString &msg)
+void Core::sendLogMsgStockExchange(const TradingCatCommon::StockExchangeID &id, Common::MSG_CODE category, const QString &msg)
 {
     _loger->sendLogMsg(category, QString("Stock exchange %1: %2").arg(id.toString()).arg(msg));
 }
@@ -251,35 +252,35 @@ void Core::errorOccurredTradingData(Common::EXIT_CODE errorCode, const QString &
 {
     const auto msg = QString("Critical error while the TradingData is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
 
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::CRITICAL_CODE, msg);
+    _loger->sendLogMsg(MSG_CODE::CRITICAL_CODE, msg);
 
     qCritical() << msg;
 
     QCoreApplication::exit(errorCode);
 }
 
-void Core::sendLogMsgTradingData(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void Core::sendLogMsgTradingData(Common::MSG_CODE category, const QString &msg)
 {
     _loger->sendLogMsg(category, QString("TradingData: %1").arg(msg));
 }
 
 void Core::startedTradingData()
 {
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Get all klines ID from stock exchanges"));
+    _loger->sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("Get all klines ID from stock exchanges"));
 }
 
 void Core::errorOccurredUsersCore(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     const auto msg = QString("Critical error while the UsersCore is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
 
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::CRITICAL_CODE, msg);
+    _loger->sendLogMsg(MSG_CODE::CRITICAL_CODE, msg);
 
     qCritical() << msg;
 
     QCoreApplication::exit(errorCode);
 }
 
-void Core::sendLogMsgUsersCore(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void Core::sendLogMsgUsersCore(Common::MSG_CODE category, const QString &msg)
 {
     _loger->sendLogMsg(category, QString("Users core: %1").arg(msg));
 }
@@ -288,14 +289,14 @@ void Core::errorOccurredDetector(Common::EXIT_CODE errorCode, const QString &err
 {
     const auto msg = QString("Critical error while the Detector is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
 
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::CRITICAL_CODE, msg);
+    _loger->sendLogMsg(MSG_CODE::CRITICAL_CODE, msg);
 
     qCritical() << msg;
 
     QCoreApplication::exit(errorCode);
 }
 
-void Core::sendLogMsgDetector(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void Core::sendLogMsgDetector(Common::MSG_CODE category, const QString &msg)
 {
     _loger->sendLogMsg(category, QString("Detector: %1").arg(msg));
 }
@@ -304,14 +305,14 @@ void Core::errorOccurredAppServer(Common::EXIT_CODE errorCode, const QString &er
 {
     const auto msg = QString("Critical error while the HTTP server is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
 
-    _loger->sendLogMsg(TDBLoger::MSG_CODE::CRITICAL_CODE, msg);
+    _loger->sendLogMsg(MSG_CODE::CRITICAL_CODE, msg);
 
     qCritical() << msg;
 
     QCoreApplication::exit(errorCode);
 }
 
-void Core::sendLogMsgAppServer(Common::TDBLoger::MSG_CODE category, const QString &msg)
+void Core::sendLogMsgAppServer(Common::MSG_CODE category, const QString &msg)
 {
     _loger->sendLogMsg(category, QString("Application HTTP server: %1").arg(msg));
 }
@@ -384,6 +385,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const StockExchange::Stoc
     else if (stockExchangeConfig.type == MexcFutures::STOCK_ID)
     {
         return std::make_unique<MexcFutures>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == BingxFutures::STOCK_ID)
+    {
+        return std::make_unique<BingxFutures>(stockExchangeConfig, _proxyList);
     }
 
     return nullptr;

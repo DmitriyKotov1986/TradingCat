@@ -45,20 +45,20 @@ private slots:
     void errorOccurredLoger(Common::EXIT_CODE errorCode, const QString& errorString);
 
     void errorOccurredStockExchange(const TradingCatCommon::StockExchangeID& id, Common::EXIT_CODE errorCode, const QString& errorString);
-    void sendLogMsgStockExchange(const TradingCatCommon::StockExchangeID& id, Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void sendLogMsgStockExchange(const TradingCatCommon::StockExchangeID& id, Common::MSG_CODE category, const QString& msg);
 
     void errorOccurredTradingData(Common::EXIT_CODE errorCode, const QString& errorString);
-    void sendLogMsgTradingData(Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void sendLogMsgTradingData(Common::MSG_CODE category, const QString& msg);
     void startedTradingData();
 
     void errorOccurredUsersCore(Common::EXIT_CODE errorCode, const QString& errorString);
-    void sendLogMsgUsersCore(Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void sendLogMsgUsersCore(Common::MSG_CODE category, const QString& msg);
 
     void errorOccurredDetector(Common::EXIT_CODE errorCode, const QString& errorString);
-    void sendLogMsgDetector(Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void sendLogMsgDetector(Common::MSG_CODE category, const QString& msg);
 
     void errorOccurredAppServer(Common::EXIT_CODE errorCode, const QString& errorString);
-    void sendLogMsgAppServer(Common::TDBLoger::MSG_CODE category, const QString& msg);
+    void sendLogMsgAppServer(Common::MSG_CODE category, const QString& msg);
 
 private:
     std::unique_ptr<StockExchange::IStockExchange> makeStockEchange(const StockExchange::StockExchangeConfig& stockExchangeConfig) const;
@@ -70,7 +70,7 @@ private:
 
     QString _errorString;
 
-    Common::HTTPSSLQuery::ProxyList _proxyList;
+    Common::ProxyList _proxyList;
 
     struct StockExchangeThread
     {

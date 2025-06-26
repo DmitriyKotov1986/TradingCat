@@ -71,14 +71,14 @@ QString AppServer::loginUser(const QHttpServerRequest &request)
 
     LoginQuery queryData(query);
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Login from %2:%3")
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Login from %2:%3")
                                                               .arg(queryData.id())
                                                               .arg(request.remoteAddress().toString())
                                                               .arg(request.remotePort()));
 
     if (queryData.isError())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
                                                               .arg(queryData.id())
                                                               .arg(queryData.errorString())
                                                               .arg(request.url().toString()));
@@ -95,14 +95,14 @@ QString AppServer::logoutUser(const QHttpServerRequest &request)
 
     LogoutQuery queryData(query);
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Logout from %2:%3")
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Logout from %2:%3")
                                                               .arg(queryData.id())
                                                               .arg(request.remoteAddress().toString())
                                                               .arg(request.remotePort()));
 
     if (queryData.isError())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
                             .arg(queryData.id())
                             .arg(queryData.errorString())
                             .arg(request.url().toString()));
@@ -119,14 +119,14 @@ QString AppServer::configUser(const QHttpServerRequest &request)
 
     ConfigQuery queryData(query);
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Config from %2:%3")
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Config from %2:%3")
                                                               .arg(queryData.id())
                                                               .arg(request.remoteAddress().toString())
                                                               .arg(request.remotePort()));
 
     if (queryData.isError())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
                             .arg(queryData.id())
                             .arg(queryData.errorString())
                             .arg(request.url().toString()));
@@ -143,14 +143,14 @@ QString AppServer::detectData(const QHttpServerRequest &request)
 
     DetectQuery queryData(query);
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Detect from %2:%3")
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 GET Request Detect from %2:%3")
                                                               .arg(queryData.id())
                                                               .arg(request.remoteAddress().toString())
                                                               .arg(request.remotePort()));
 
     if (queryData.isError())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
                             .arg(queryData.id())
                             .arg(queryData.errorString())
                             .arg(request.url().toString()));
@@ -167,14 +167,14 @@ QString AppServer::stockExchangesData(const QHttpServerRequest &request)
 
     StockExchangesQuery queryData(query);
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request StockExchanges from %2:%3")
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 GET Request StockExchanges from %2:%3")
                                                               .arg(queryData.id())
                                                               .arg(request.remoteAddress().toString())
                                                               .arg(request.remotePort()));
 
     if (queryData.isError())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
                             .arg(queryData.id())
                             .arg(queryData.errorString())
                             .arg(request.url().toString()));
@@ -191,14 +191,14 @@ QString AppServer::klinesIdList(const QHttpServerRequest &request)
 
     KLinesIDListQuery queryData(query);
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request KLinesIDList from %2:%3")
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 GET Request KLinesIDList from %2:%3")
                                                               .arg(queryData.id())
                                                               .arg(request.remoteAddress().toString())
                                                               .arg(request.remotePort()));
 
     if (queryData.isError())
     {
-        emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
+        emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("%1 Bad request. Error: %2 Source: %3")
                             .arg(queryData.id())
                             .arg(queryData.errorString())
                             .arg(request.url().toString()));
@@ -213,7 +213,7 @@ QString AppServer::serverStatus(const QHttpServerRequest &request)
 {
     ServerStatusQuery queryData(request.query());
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 GET Request ServerStatus from %2:%3")
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 GET Request ServerStatus from %2:%3")
                         .arg(queryData.id())
                         .arg(request.remoteAddress().toString())
                         .arg(request.remotePort()));
@@ -225,7 +225,7 @@ QString AppServer::serverStatus(const QHttpServerRequest &request)
 
     ServerStatusAnswer statusJson(appName, QCoreApplication::applicationVersion(), currDateTime, _startDateTime.secsTo(currDateTime), _usersCore.usersOnline());
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("%1 Successfully finished. Send answer").arg(queryData.id()));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("%1 Successfully finished. Send answer").arg(queryData.id()));
 
     return Package(statusJson).toJson();
 }
@@ -325,7 +325,7 @@ bool AppServer::makeServer()
             {
                 Q_UNUSED(resp);
 
-                emit sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Unknow %1 request from %2:%3 %4")
+                emit sendLogMsg(MSG_CODE::WARNING_CODE, QString("Unknow %1 request from %2:%3 %4")
                                      .arg(static_cast<quint16>(req.method()))
                                     .arg(req.remoteAddress().toString())
                                     .arg(req.remotePort())
@@ -375,7 +375,7 @@ bool AppServer::makeServer()
         return false;
     }
 
-    emit sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("HTTP server has listening on %1:%2").arg(_tcpServer->serverAddress().toString()).arg(_tcpServer->serverPort()));
+    emit sendLogMsg(MSG_CODE::INFORMATION_CODE, QString("HTTP server has listening on %1:%2").arg(_tcpServer->serverAddress().toString()).arg(_tcpServer->serverPort()));
 
     return true;
 }
