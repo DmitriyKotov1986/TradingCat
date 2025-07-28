@@ -28,7 +28,7 @@ class Core final
 
 public:
     explicit Core(QObject *parent = nullptr);
-    ~Core();
+    ~Core() override;
 
     QString errorString();
     bool isError() const;

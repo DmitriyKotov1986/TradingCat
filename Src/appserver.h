@@ -35,7 +35,8 @@ public:
                        const TradingCatCommon::TradingData& tradingData,
                        UsersCore& usersCore,
                        QObject* parent = nullptr);
-    ~AppServer();
+
+    ~AppServer() override;
 
 public slots:
     void start();

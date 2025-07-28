@@ -7,7 +7,7 @@
 //My
 #include <Common/common.h>
 
-#include <StockExchange/moex.h>
+//#include <StockExchange/moex.h>
 #include <StockExchange/mexc.h>
 #include <StockExchange/gate.h>
 #include <StockExchange/kucoin.h>
@@ -24,6 +24,7 @@
 #include <StockExchange/bybitfutures.h>
 #include <StockExchange/mexcfutures.h>
 #include <StockExchange/bingxfutures.h>
+#include <StockExchange/bitmartfutures.h>
 
 #include "config.h"
 
@@ -32,7 +33,7 @@ using namespace StockExchange;
 using namespace Common;
 
 Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
-                          ({Moex::STOCK_ID.name,
+                          ({ //Moex::STOCK_ID.name,
                               Mexc::STOCK_ID.name,
                               Gate::STOCK_ID.name,
                               Kucoin::STOCK_ID.name,
@@ -48,7 +49,8 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
                               BybitFutures::STOCK_ID.name,
                               GateFutures::STOCK_ID.name,
                               MexcFutures::STOCK_ID.name,
-                              BingxFutures::STOCK_ID.name
+                              BingxFutures::STOCK_ID.name,
+                              BitmartFutures::STOCK_ID.name
                           }));
 
 //static
@@ -86,7 +88,7 @@ Config::Config(const QString& configFileName) :
 
         return;
     }
-    if (!QFileInfo(_configFileName).exists())
+    if (!QFileInfo::exists(_configFileName))
     {
         _errorString = "Configuration file not exist. File name: " + _configFileName;
 

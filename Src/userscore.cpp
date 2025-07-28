@@ -21,8 +21,8 @@ using namespace Common;
 static const qint64 CONNECTION_TIMEOUT = 60 * 1000;
 static const qsizetype MAX_DETECT_EVENT = 5;
 
-static QMutex onlineMutex;
-static QMutex userDataMutex;
+Q_GLOBAL_STATIC(QMutex, onlineMutex);
+Q_GLOBAL_STATIC(QMutex, userDataMutex);
 
 using namespace TradingCatCommon;
 
@@ -48,7 +48,7 @@ QString UsersCore::login(const TradingCatCommon::LoginQuery &query)
     const auto& userName =  query.user();
     const auto& password =  query.password();
 
-    QMutexLocker userDataLocker(&userDataMutex);
+    QMutexLocker<QMutex> userDataLocker(userDataMutex);
 
      //незарегистрированный пользователь - добавляем его
     if (!_users->isUserExist(userName))
@@ -74,7 +74,7 @@ QString UsersCore::login(const TradingCatCommon::LoginQuery &query)
 
     auto sessionId = getId();
 
-    QMutexLocker onlineLocker(&onlineMutex);
+    QMutexLocker<QMutex> onlineLocker(onlineMutex);
 
     _onlineUsers.emplace(sessionId, std::move(sessionData));
 
@@ -91,7 +91,7 @@ QString UsersCore::logout(const TradingCatCommon::LogoutQuery &query)
     QString userName;
 
     {
-        QMutexLocker onlineLocker(&onlineMutex);
+        QMutexLocker<QMutex> onlineLocker(onlineMutex);
 
         const auto it_onlineUsers = _onlineUsers.find(sessionId);
         if (it_onlineUsers == _onlineUsers.end())
@@ -116,7 +116,7 @@ QString UsersCore::config(const TradingCatCommon::ConfigQuery &query)
 {
     const auto sessionId = query.sessionId();
 
-    QMutexLocker onlineLocker(&onlineMutex);
+    QMutexLocker<QMutex> onlineLocker(onlineMutex);
 
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
@@ -133,7 +133,7 @@ QString UsersCore::config(const TradingCatCommon::ConfigQuery &query)
 
     Q_ASSERT(!userName.isEmpty());
 
-    QMutexLocker userDataLocker(&userDataMutex);
+    QMutexLocker<QMutex> userDataLocker(userDataMutex);
 
     auto& user = _users->user(userName);
 
@@ -149,7 +149,7 @@ QString UsersCore::detect(const TradingCatCommon::DetectQuery &query)
 {
     const auto sessionId = query.sessionId();
 
-    QMutexLocker onlineLocker(&onlineMutex);
+    QMutexLocker<QMutex> onlineLocker(onlineMutex);
 
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
@@ -178,7 +178,7 @@ QString UsersCore::detect(const TradingCatCommon::DetectQuery &query)
 
 bool UsersCore::isOnline(int sessionId) const
 {
-    QMutexLocker locker(&onlineMutex);
+    QMutexLocker<QMutex> locker(onlineMutex);
 
     return _onlineUsers.contains(sessionId);
 }
@@ -187,7 +187,7 @@ QString UsersCore::stockExchange(const TradingCatCommon::StockExchangesQuery &qu
 {
     const auto sessionId = query.sessionId();
 
-    QMutexLocker onlineLocker(&onlineMutex);
+    QMutexLocker<QMutex> onlineLocker(onlineMutex);
 
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
@@ -209,7 +209,7 @@ QString UsersCore::klinesIdList(const TradingCatCommon::KLinesIDListQuery &query
 {
     const auto sessionId = query.sessionId();
 
-    QMutexLocker onlineLocker(&onlineMutex);
+    QMutexLocker<QMutex> onlineLocker(onlineMutex);
 
     const auto it_onlineUsers = _onlineUsers.find(sessionId);
     if (it_onlineUsers == _onlineUsers.end())
@@ -229,7 +229,7 @@ QStringList UsersCore::usersOnline() const
 {
     QStringList result;
 
-    QMutexLocker locker(&onlineMutex);
+    QMutexLocker<QMutex> locker(onlineMutex);
 
     for (const auto& user: _onlineUsers)
     {
@@ -308,7 +308,7 @@ qint64 UsersCore::getId()
 
 void UsersCore::connectionTimeout()
 {
-    QMutexLocker<QMutex> locker(&onlineMutex);
+    QMutexLocker<QMutex> locker(onlineMutex);
 
     for (auto it_onlineUser = _onlineUsers.begin(); it_onlineUser != _onlineUsers.end();)
     {
@@ -340,7 +340,7 @@ void UsersCore::klineDetect(qint64 sessionId, const TradingCatCommon::Detector::
     Q_ASSERT(!detectData->reviewHistory->empty());
     Q_ASSERT(detectData->filterActivate != Filter::FilterType::UNDETECT);
 
-    QMutexLocker<QMutex> locker(&onlineMutex);
+    QMutexLocker<QMutex> locker(onlineMutex);
 
     auto it_onlineUser = _onlineUsers.find(sessionId);
     if (it_onlineUser == _onlineUsers.end())

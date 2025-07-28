@@ -3,7 +3,7 @@
 #include <QCoreApplication>
 
 //My
-#include <StockExchange/moex.h>
+//#include <StockExchange/moex.h>
 #include <StockExchange/mexc.h>
 #include <StockExchange/gate.h>
 #include <StockExchange/kucoin.h>
@@ -20,6 +20,7 @@
 #include <StockExchange/bybitfutures.h>
 #include <StockExchange/mexcfutures.h>
 #include <StockExchange/bingxfutures.h>
+#include <StockExchange/bitmartfutures.h>
 
 #include "core.h"
 
@@ -320,11 +321,12 @@ void Core::sendLogMsgAppServer(Common::MSG_CODE category, const QString &msg)
 std::unique_ptr<IStockExchange> Core::makeStockEchange(const StockExchange::StockExchangeConfig& stockExchangeConfig) const
 {
     // Spot
-    if (stockExchangeConfig.type == Moex::STOCK_ID)
-    {
-        return std::make_unique<Moex>(stockExchangeConfig, _proxyList);
-    }
-    else if (stockExchangeConfig.type == Mexc::STOCK_ID)
+    //if (stockExchangeConfig.type == Moex::STOCK_ID)
+    //{
+    //    return std::make_unique<Moex>(stockExchangeConfig, _proxyList);
+    //}
+    //else
+    if (stockExchangeConfig.type == Mexc::STOCK_ID)
     {
         return std::make_unique<Mexc>(stockExchangeConfig, _proxyList);
     }
@@ -389,6 +391,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const StockExchange::Stoc
     else if (stockExchangeConfig.type == BingxFutures::STOCK_ID)
     {
         return std::make_unique<BingxFutures>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == BitmartFutures::STOCK_ID)
+    {
+        return std::make_unique<BitmartFutures>(stockExchangeConfig, _proxyList);
     }
 
     return nullptr;
