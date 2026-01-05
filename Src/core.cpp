@@ -14,6 +14,7 @@
 #include <StockExchange/bingx.h>
 #include <StockExchange/okx.h>
 #include <StockExchange/htx.h>
+#include <StockExchange/lbank.h>
 #include <StockExchange/kucoinfutures.h>
 #include <StockExchange/bitgetfutures.h>
 #include <StockExchange/gatefutures.h>
@@ -365,6 +366,10 @@ std::unique_ptr<IStockExchange> Core::makeStockEchange(const StockExchange::Stoc
     else if (stockExchangeConfig.type == Htx::STOCK_ID)
     {
         return std::make_unique<Htx>(stockExchangeConfig, _proxyList);
+    }
+    else if (stockExchangeConfig.type == LBank::STOCK_ID)
+    {
+        return std::make_unique<LBank>(stockExchangeConfig, _proxyList);
     }
 
     // Futures

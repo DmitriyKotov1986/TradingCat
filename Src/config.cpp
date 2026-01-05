@@ -25,6 +25,7 @@
 #include <StockExchange/mexcfutures.h>
 #include <StockExchange/bingxfutures.h>
 #include <StockExchange/bitmartfutures.h>
+#include <StockExchange/lbank.h>
 
 #include "config.h"
 
@@ -50,7 +51,8 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QStringList, STOCK_NAME_LIST,
                               GateFutures::STOCK_ID.name,
                               MexcFutures::STOCK_ID.name,
                               BingxFutures::STOCK_ID.name,
-                              BitmartFutures::STOCK_ID.name
+                              BitmartFutures::STOCK_ID.name,
+                              LBank::STOCK_ID.name
                           }));
 
 //static
